@@ -1,0 +1,3522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Miri Surfers: NIS Dash � 3D</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#87CEEB;display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden;font-family:'Segoe UI',Tahoma,sans-serif;user-select:none}
+#gameContainer{position:relative;width:100vw;height:100vh}
+#gameContainer canvas{display:block;width:100%;height:100%}
+#hud{position:absolute;top:0;left:0;right:0;padding:12px 16px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:5}
+.hud-left{display:flex;flex-direction:column;gap:4px}
+.hud-nis{font-size:30px;color:#FFD700;font-weight:bold;text-shadow:2px 2px 6px rgba(0,0,0,0.9)}
+.hud-multiplier{font-size:16px;color:#ff6b6b;font-weight:bold;display:none}
+.hud-multiplier.active{display:block}
+.hud-distance{font-size:22px;color:#fff;font-weight:bold;text-shadow:2px 2px 6px rgba(0,0,0,0.9)}
+#hudBusPrice{position:absolute;top:55px;left:50%;transform:translateX(-50%);background:rgba(180,30,30,0.9);color:#fff;padding:7px 18px;border-radius:18px;font-size:16px;font-weight:bold;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,0.4);transition:transform 0.15s;z-index:5;pointer-events:none}
+#hudBusPrice.bump{transform:translateX(-50%) scale(1.3)}
+.hud-action{position:absolute;bottom:120px;left:50%;transform:translateX(-50%);font-size:20px;font-weight:bold;text-shadow:0 0 12px currentColor;pointer-events:none;display:none;z-index:5}
+.hud-action.active{display:block}
+#hudActionJump{color:#44ff44}
+#hudActionSlide{color:#ff44ff}
+#floatingTextContainer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden;z-index:6}
+.overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:none;flex-direction:column;justify-content:center;align-items:center;background:rgba(0,0,0,0.82);border-radius:14px;z-index:10}
+.overlay.visible{display:flex}
+.overlay h1{font-size:56px;color:#FFD700;text-shadow:3px 3px 10px rgba(0,0,0,0.9),0 0 30px rgba(255,215,0,0.3);margin-bottom:6px}
+.overlay h2{font-size:20px;color:#87CEEB;margin-bottom:25px;font-weight:normal}
+.overlay .stats{font-size:20px;color:#fff;margin-bottom:6px;text-align:center;line-height:1.7}
+.overlay .stats .price{color:#ff6b6b;font-size:17px}
+.overlay button{padding:20px 70px;font-size:28px;border:none;border-radius:35px;cursor:pointer;background:linear-gradient(135deg,#0055bb,#0088ff);color:#fff;font-weight:bold;text-transform:uppercase;letter-spacing:3px;box-shadow:0 5px 20px rgba(0,80,255,0.5);transition:transform 0.15s,box-shadow 0.15s;margin-top:15px}
+.overlay button:hover{transform:scale(1.06);box-shadow:0 8px 25px rgba(0,100,255,0.7)}
+#controls-hint{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.35);font-size:11px;z-index:5;pointer-events:none;text-align:center}
+@keyframes chaserPulse{from{opacity:0.6;transform:translate(-50%,-50%) scale(0.95)}to{opacity:1;transform:translate(-50%,-50%) scale(1.05)}}
+#stumbleOverlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:4;background:radial-gradient(ellipse at center,transparent 50%,rgba(255,0,0,0.35) 100%);display:none}
+</style>
+</head>
+<body>
+
+<!-- Tzav Giyus document overlay -->
+<div id="giyusHitOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); z-index:9999; align-items:center; justify-content:center; pointer-events:none;">
+  <div style="background:#fffef5; border:4px solid #003399; border-radius:10px; padding:30px 40px; max-width:380px; width:88%; text-align:center; direction:rtl; font-family:Arial, sans-serif; box-shadow:0 8px 32px rgba(0,0,0,0.6);">
+    <div style="font-size:12px; color:#003399; letter-spacing:1px; margin-bottom:4px;">&#x05DE;&#x05D3;&#x05D9;&#x05E0;&#x05EA; &#x05D9;&#x05E9;&#x05E8;&#x05D0;&#x05DC; &nbsp;|&nbsp; &#x05DE;&#x05E9;&#x05E8;&#x05D3; &#x05D4;&#x05D1;&#x05D9;&#x05D8;&#x05D7;&#x05D5;&#x05DF;</div>
+    <div style="border-top:2px solid #003399; margin:8px 0;"></div>
+    <div style="font-size:20px; font-weight:bold; color:#003399; margin:8px 0;">&#x05D4;&#x05D5;&#x05D3;&#x05E2;&#x05EA; &#x05E7;&#x05D1;&#x05DC;&#x05D4; &#x05DC;&#x05E9;&#x05D9;&#x05E8;&#x05D5;&#x05EA; &#x05E1;&#x05D3;&#x05D9;&#x05E8;</div>
+    <div style="font-size:36px; font-weight:bold; color:#cc0000; margin:14px 0; line-height:1.3;" id="giyusHitUnit">&#x05D4;&#x05EA;&#x05E7;&#x05D1;&#x05DC;&#x05EA; &#x05DC;&#x05D2;&#x05D5;&#x05DC;&#x05E0;&#x05D9;</div>
+    <div style="font-size:13px; color:#333; margin:10px 0; line-height:1.6;">&#x05E2;&#x05DC;&#x05D9;&#x05DA; &#x05DC;&#x05D4;&#x05EA;&#x05D9;&#x05D9;&#x05E6;&#x05D1; &#x05EA;&#x05D5;&#x05DA; 72 &#x05E9;&#x05E2;&#x05D5;&#x05EA;<br>&#x05D1;&#x05E6;&#x05D9;&#x05E8;&#x05D5;&#x05E3; &#x05DB;&#x05DC; &#x05D4;&#x05E6;&#x05D9;&#x05D5;&#x05D3; &#x05D4;&#x05D0;&#x05D9;&#x05E9;&#x05D9;</div>
+    <div style="font-size:11px; color:#888; margin-top:10px; border-top:1px solid #ccc; padding-top:8px;">&#x05D7;&#x05EA;&#x05D9;&#x05DE;&#x05D4;: &#x05D9;. &#x05D2;&#x05D5;&#x05DC;&#x05D3;&#x05E7;&#x05E0;&#x05D5;&#x05E4;&#x05E3; &nbsp;|&nbsp; &#x05DE;&#x05DE;&#x05E9;&#x05D9;&#x05DA; &#x05D1;&#x05E2;&#x05D5;&#x05D3; <span id="giyusCountdown">3</span> &#x05E9;&#x05E0;&#x05D9;&#x05D5;&#x05EA;</div>
+  </div>
+</div>
+
+<div id="tzavOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center; pointer-events:none;">
+  <div style="background:#fffef5; border:4px solid #003399; border-radius:10px; padding:30px 40px; max-width:360px; width:85%; text-align:center; direction:rtl; font-family:Arial, sans-serif; box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+    <div style="font-size:12px; color:#003399; letter-spacing:1px; margin-bottom:4px;">מדינת ישראל &nbsp;|&nbsp; משרד הביטחון</div>
+    <div style="border-top:2px solid #003399; margin:8px 0;"></div>
+    <div style="font-size:34px; font-weight:bold; color:#cc0000; margin:10px 0; letter-spacing:1px; line-height:1.2;">צו גיוס<br>עליך להשתמט!</div>
+    <div style="font-size:14px; color:#222; margin:10px 0; line-height:1.6;">לפי חוק שירות ביטחון, הינך מחויב<br>להתייצב לשירות מיידי</div>
+    <div style="font-size:12px; color:#555; margin-top:8px; border-top:1px solid #ccc; padding-top:8px;">כישלון להתייצב — עונש מאסר עד 2 שנים</div>
+    <div style="font-size:52px; margin-top:12px;">📋</div>
+    <div style="font-size:11px; color:#888; margin-top:6px;">חתימה: י. גולדקנופף</div>
+  </div>
+</div>
+
+<div id="gameContainer">
+  <div id="hud">
+    <div class="hud-left">
+      <span class="hud-nis" id="hudNis">&#x20AA; 0</span>
+      <span class="hud-multiplier" id="hudMultiplier">x2</span>
+      <span class="hud-multiplier" id="hudScooter" style="color:#00cc88">SCOOTER!</span>
+      <span class="hud-multiplier" id="hudTrump" style="color:#ff6600;display:none">$ TRUMP COIN</span>
+    </div>
+    <span class="hud-distance" id="hudDistance">0m</span>
+    <span id="hudTier" style="display:none;font-size:13px;font-weight:bold;color:#ff4400;text-shadow:0 0 8px #ff440088;margin-left:8px"></span>
+    <span id="hudDaily" style="display:none;font-size:13px;font-weight:bold;color:#ffaa00;margin-left:6px">&#x1F4C5; DAILY</span>
+  </div>
+  <div id="hudBusPrice">&#x1F68C; Ticket: &#x20AA;5.50</div>
+  <div class="hud-action" id="hudActionJump">JUMP!</div>
+  <div class="hud-action" id="hudActionSlide">SLIDE!</div>
+  <div id="hudChaserWarn" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:28px;font-weight:bold;color:#ff2222;text-shadow:0 0 20px #ff0000,0 0 40px #ff000088;pointer-events:none;z-index:6;animation:chaserPulse 0.5s infinite alternate">INSPECTOR IS CLOSE!</div>
+  <div id="floatingTextContainer"></div>
+  <div id="stumbleOverlay"></div>
+
+  <div class="overlay visible" id="menuOverlay">
+    <h1>&#x1F3C3; Miri Surfers</h1>
+    <h2>3D NIS Rush Edition</h2>
+    <button id="btnStart">START</button>
+    <button id="btnDaily" style="margin-top:8px;padding:14px 40px;font-size:20px;background:linear-gradient(135deg,#aa6600,#ffaa00);border:none;border-radius:35px;color:#fff;font-weight:bold;cursor:pointer;letter-spacing:2px">&#x1F4C5; DAILY CHALLENGE</button>
+    <div id="dailyDateLabel" style="font-size:12px;color:#ffcc88;margin-top:4px"></div>
+    <div style="display:flex;gap:24px;margin-top:12px;font-size:13px;color:#fff;text-align:center">
+      <div>
+        <div style="color:#FFD700;font-weight:bold;margin-bottom:4px">&#x1F3C6; TOP RUNS</div>
+        <ol id="menuScoreList" style="margin:0;padding-left:22px;line-height:1.8;color:#ccc"></ol>
+      </div>
+      <div>
+        <div style="color:#ffaa00;font-weight:bold;margin-bottom:4px">&#x1F4C5; TODAY</div>
+        <ol id="menuDailyList" style="margin:0;padding-left:22px;line-height:1.8;color:#ccc"></ol>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="gameOverOverlay">
+    <h1 style="color:#ff3333">&#x05E0;&#x05EA;&#x05E4;&#x05E1;&#x05EA;!</h1>
+    <h2>&#x05DC;&#x05E4;&#x05D9;&#x05D3; &#x05E9;&#x05D9;&#x05E4;&#x05D3; &#x05D0;&#x05EA; &#x05DE;&#x05D9;&#x05E8;&#x05D9;!</h2>
+    <div class="stats">
+      <div id="goNis">&#x20AA;0 collected</div>
+      <div id="goDistance">0m</div>
+      <div class="price" id="goPrice">&#x1F68C; &#x20AA;5.50 &#x2192; &#x20AA;5.50</div>
+    </div>
+    <div id="goPersonalBest" style="color:#ffdd00;font-size:16px;font-weight:bold;margin:6px 0"></div>
+    <div style="display:flex;gap:20px;font-size:13px;color:#fff;text-align:center;margin-bottom:10px">
+      <div id="goLeaderboard">
+        <div style="color:#FFD700;font-weight:bold;margin-bottom:4px">&#x1F3C6; TOP RUNS</div>
+        <ol id="goScoreList" style="margin:0;padding-left:22px;line-height:1.8;color:#ccc"></ol>
+      </div>
+      <div id="goDailyBoard" style="display:none">
+        <div style="color:#ffaa00;font-weight:bold;margin-bottom:4px">&#x1F4C5; TODAY</div>
+        <ol id="goDailyList" style="margin:0;padding-left:22px;line-height:1.8;color:#ccc"></ol>
+      </div>
+    </div>
+    <button id="btnTryAgain">TRY AGAIN</button>
+  </div>
+
+  <div id="controls-hint">&#x2190;&#x2192; lanes | &#x2191; jump | &#x2193; slide | swipe on mobile</div>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+function mulberry32(seed) {
+  return function() {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function todaySeed() {
+  const d = new Date();
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+}
+function rng() { return gs.dailyMode ? gs._rng() : Math.random(); }
+
+
+// �?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?
+// SCENE & ENVIRONMENT
+// �?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?
+const ROAD_WIDTH = 9, LANE_WIDTH = 3, SEGMENT_LENGTH = 40, NUM_SEGMENTS = 4;
+const LANE_X = [-3, 0, 3];
+const scene = new THREE.Scene();
+scene.background = null;
+scene.fog = new THREE.FogExp2(0xa8ddf8, 0.010);
+
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 500);
+camera.position.set(0, 7, 10);
+camera.lookAt(0, 1, -20);
+
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.4;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+document.getElementById('gameContainer').prepend(renderer.domElement);
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+const hemiLight = new THREE.HemisphereLight(0xb8d8ff, 0x886644, 0.9);
+scene.add(hemiLight);
+scene.add(new THREE.AmbientLight(0xffe8d0, 0.35));
+const sunLight = new THREE.DirectionalLight(0xffe0a0, 1.3);
+sunLight.position.set(12, 28, 18);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.set(1024, 1024);
+scene.add(sunLight);
+const fillLight = new THREE.DirectionalLight(0x88bbdd, 0.25);
+fillLight.position.set(-12, 8, -5);
+scene.add(fillLight);
+
+// ── Sky dome — gradient canvas texture, inside-out sphere ──
+(function() {
+  const sw = 64, sh = 256;
+  const sc = document.createElement('canvas'); sc.width = sw; sc.height = sh;
+  const sx = sc.getContext('2d');
+  const grad = sx.createLinearGradient(0, 0, 0, sh);
+  grad.addColorStop(0.00, '#5ab5e8');   // bright sky blue zenith
+  grad.addColorStop(0.40, '#7ecbf0');   // mid bright blue
+  grad.addColorStop(0.72, '#a8ddf8');   // pale blue near horizon
+  grad.addColorStop(0.90, '#c8eeff');   // very light blue horizon
+  grad.addColorStop(1.00, '#dff5ff');   // near-white at base
+  sx.fillStyle = grad; sx.fillRect(0, 0, sw, sh);
+  const skyTex = new THREE.CanvasTexture(sc);
+  const skyDome = new THREE.Mesh(
+    new THREE.SphereGeometry(400, 20, 10),
+    new THREE.MeshBasicMaterial({map: skyTex, side: THREE.BackSide, depthWrite: false})
+  );
+  skyDome.rotation.y = Math.PI; // orient gradient correctly
+  scene.add(skyDome);
+})();
+
+
+function createRoadSegment() {
+  const g = new THREE.Group();
+  const road = new THREE.Mesh(
+    new THREE.PlaneGeometry(ROAD_WIDTH, SEGMENT_LENGTH),
+    new THREE.MeshStandardMaterial({color:0x555566, roughness:0.85})
+  );
+  road.rotation.x = -Math.PI/2; road.receiveShadow = true; g.add(road);
+
+  const wMat = new THREE.MeshBasicMaterial({color:0xffffff});
+  for (let lane = 1; lane <= 2; lane++) {
+    const x = -ROAD_WIDTH/2 + lane * LANE_WIDTH;
+    for (let z = -SEGMENT_LENGTH/2; z < SEGMENT_LENGTH/2; z += 10) {
+      const d = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 4), wMat);
+      d.rotation.x = -Math.PI/2; d.position.set(x, 0.02, z); g.add(d);
+    }
+  }
+  const eMat = new THREE.MeshBasicMaterial({color:0xffcc00});
+  for (const s of [-1, 1]) {
+    const e = new THREE.Mesh(new THREE.PlaneGeometry(0.2, SEGMENT_LENGTH), eMat);
+    e.rotation.x = -Math.PI/2; e.position.set(s*ROAD_WIDTH/2, 0.03, 0); g.add(e);
+  }
+  return g;
+}
+
+const roadSegs = [];
+for (let i = 0; i < NUM_SEGMENTS; i++) {
+  const s = createRoadSegment();
+  s.position.z = -i * SEGMENT_LENGTH;
+  roadSegs.push(s); scene.add(s);
+}
+
+function makeCanvasTex(text, w, h, bg, fg, fontSize) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const x = c.getContext('2d');
+  if (bg) { x.fillStyle = bg; x.fillRect(0, 0, w, h); }
+  x.fillStyle = fg||'#000'; x.font = `bold ${fontSize||32}px Arial`; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillText(text, w/2, h/2);
+  const t = new THREE.CanvasTexture(c); t.needsUpdate = true; return t;
+}
+
+// Pre-cached Goldknopf textures (created once, reused every spawn)
+const _taxBagTex  = makeCanvasTex('\u20AA', 64, 64, '#228833', '#ffffff', 36);
+const _taxWarnTex = makeCanvasTex('\u05D2\u05D9\u05D5\u05E1!', 128, 128, '#cc0000', '#ffffff', 48);
+const _taxStampTex = makeCanvasTex('\u05E6\u05D5 \u05D2\u05D9\u05D5\u05E1', 128, 64, '#003399', '#ffffff', 24);
+
+// Mediterranean / Tel Aviv "White City" palette — cream, sandstone, off-white
+const bldgColors = [0xf5f0e4, 0xede4d0, 0xe2d8c2, 0xd8ccb4, 0xcec4aa, 0xf0ebe0, 0xe8e0cc, 0xddd4be];
+const winColors  = [0x88bbdd, 0xaad4ee, 0x77aacc, 0x99c8e8];
+
+function createBuilding(w, h, d, signText) {
+  const g = new THREE.Group();
+  const col = bldgColors[Math.random() * bldgColors.length | 0];
+  const box = new THREE.Mesh(
+    new THREE.BoxGeometry(w, h, d),
+    new THREE.MeshStandardMaterial({color: col, roughness: 0.7})
+  );
+  box.castShadow = true; g.add(box);
+
+  // Windows grid on front face
+  const rows = Math.floor(h / 2.5), cols = Math.floor(w / 2);
+  const wM = new THREE.MeshBasicMaterial({color: winColors[Math.random()*4|0], transparent: true, opacity: 0.8});
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    if (Math.random() > 0.3) {
+      const win = new THREE.Mesh(new THREE.PlaneGeometry(0.45, 0.65), wM);
+      win.position.set((c-(cols-1)/2)*2, (r-(rows-1)/2)*2.5 + h/2 - 1.2, d/2 + 0.01);
+      g.add(win);
+    }
+  }
+
+  // Optional sign/placard near base
+  if (signText) {
+    const sTex = makeCanvasTex(signText, 256, 64, '#ffffff', '#1a4488', 24);
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.6, 0.55),
+      new THREE.MeshBasicMaterial({map: sTex, transparent: true, side: THREE.DoubleSide}));
+    sign.position.set(0, 1.0, d / 2 + 0.02);
+    g.add(sign);
+  }
+  return g;
+}
+
+// ── Azrieli Towers — fixed permanent landmarks in the far background ──
+function createAzrieliTowers() {
+  const g = new THREE.Group();
+
+  // Glass window material (reflective blue-green)
+  const glassMat  = new THREE.MeshStandardMaterial({color: 0x5599bb, roughness: 0.1, metalness: 0.6, transparent: true, opacity: 0.9});
+  const glass2Mat = new THREE.MeshStandardMaterial({color: 0x4488aa, roughness: 0.1, metalness: 0.6, transparent: true, opacity: 0.9});
+  const glass3Mat = new THREE.MeshStandardMaterial({color: 0x336688, roughness: 0.1, metalness: 0.7, transparent: true, opacity: 0.9});
+  const concMat   = new THREE.MeshStandardMaterial({color: 0xd8d0c0, roughness: 0.6});
+
+  // ① Circular tower — tallest
+  const circ = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, 42, 16), glassMat);
+  circ.position.set(6, 21, 0);
+  g.add(circ);
+  const circTop = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 3.2, 1.2, 16), concMat);
+  circTop.position.set(6, 42.6, 0);
+  g.add(circTop);
+
+  // ② Triangular tower — medium height
+  const tri = new THREE.Mesh(new THREE.CylinderGeometry(3.0, 3.0, 36, 3), glass2Mat);
+  tri.position.set(-2, 18, 2);
+  g.add(tri);
+  const triTop = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.0, 1.0), concMat);
+  triTop.position.set(-2, 36.5, 2);
+  g.add(triTop);
+
+  // ③ Square tower — slightly shorter
+  const sq = new THREE.Mesh(new THREE.BoxGeometry(6, 32, 6), glass3Mat);
+  sq.position.set(14, 16, 1);
+  g.add(sq);
+  // Square tower setbacks (decorative ledges)
+  for (const yy of [10, 20, 28]) {
+    const ledge = new THREE.Mesh(new THREE.BoxGeometry(6.6, 0.4, 6.6), concMat);
+    ledge.position.set(14, yy, 1);
+    g.add(ledge);
+  }
+
+  // Shared podium base
+  const podium = new THREE.Mesh(new THREE.BoxGeometry(28, 3, 12), concMat);
+  podium.position.set(6, 1.5, 0);
+  g.add(podium);
+
+  // "AZRIELI" label on podium
+  const azTex = makeCanvasTex('\u05D0\u05D6\u05E8\u05D9\u05D0\u05DC\u05D9', 256, 64, '#d8d0c0', '#1a3366', 28);
+  const azLabel = new THREE.Mesh(new THREE.PlaneGeometry(7, 1.2),
+    new THREE.MeshBasicMaterial({map: azTex, transparent: true}));
+  azLabel.position.set(6, 2.6, 6.05);
+  g.add(azLabel);
+
+  return g;
+}
+
+// Place Azrieli towers fixed in the far background — they never scroll
+const azrieli = createAzrieliTowers();
+azrieli.position.set(18, 0, -80); // right side, far back
+scene.add(azrieli);
+
+
+// ── Additional mid-distance Tel Aviv-style towers ──
+const fixedTowers = [
+  {x: -30, z: -70, w: 5, h: 28, col: 0xe8e2d4},
+  {x:  30, z: -65, w: 4, h: 22, col: 0xd4cfc0},
+  {x: -14, z: -75, w: 3.5, h: 35, col: 0x5588aa},
+  {x:  26, z: -85, w: 5, h: 18, col: 0xe0dbd0},
+];
+fixedTowers.forEach(({x, z, w, h, col}) => {
+  const mat = new THREE.MeshStandardMaterial({color: col, roughness: 0.5, metalness: col < 0x888888 ? 0.3 : 0});
+  const t = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), mat);
+  t.position.set(x, h / 2, z);
+  scene.add(t);
+});
+
+const buildings = [];
+// Front row — Mediterranean low-rise buildings
+for (let i = 0; i < 16; i++) {
+  const w = 4 + Math.random()*5, h = 8 + Math.random()*12, d = 5 + Math.random()*4;
+  const hasTASign = i === 3 || i === 10; // a couple get a Tel Aviv sign
+  for (const side of [-1, 1]) {
+    const b = createBuilding(w, h, d, hasTASign ? '\u05EA\u05DC \u05D0\u05D1\u05D9\u05D1' : null);
+    b.position.set(side * (ROAD_WIDTH/2 + w/2 + 4), h/2, -i*22 - Math.random()*8);
+    buildings.push(b); scene.add(b);
+  }
+}
+// Back row — taller mid-rise buildings
+for (let i = 0; i < 12; i++) {
+  const w = 5 + Math.random()*6, h = 18 + Math.random()*20, d = 6 + Math.random()*5;
+  for (const side of [-1, 1]) {
+    const b = createBuilding(w, h, d);
+    b.position.set(side * (ROAD_WIDTH/2 + w/2 + 10 + Math.random()*3), h/2, -i*28 - Math.random()*12);
+    buildings.push(b); scene.add(b);
+  }
+}
+
+// ══════════════════════════════════════════════════
+//  CITY STREET DETAILS — street lights, bus stops,
+//  palm trees, parked cars, billboards
+// ══════════════════════════════════════════════════
+const streetObjects = [];
+const SIDEWALK_X = ROAD_WIDTH / 2 + 1.8; // just outside road edge
+const STREET_SPAN = 200; // total z range — fog hides anything beyond this
+
+// ── Street light factory ──
+function createStreetLight() {
+  const g = new THREE.Group();
+  const poleMat = new THREE.MeshStandardMaterial({color: 0x888888, roughness: 0.5, metalness: 0.4});
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.1, 6.5, 8), poleMat);
+  pole.position.y = 3.25;
+  g.add(pole);
+  // Horizontal arm
+  const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.6, 8), poleMat);
+  arm.rotation.z = Math.PI / 2;
+  arm.position.set(0.8, 6.3, 0);
+  g.add(arm);
+  // Light head
+  const headMat = new THREE.MeshStandardMaterial({color: 0xffffcc, emissive: 0xffff88, emissiveIntensity: 1.0, roughness: 0.3});
+  const head = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.16, 0.28, 10), headMat);
+  head.position.set(1.6, 6.25, 0);
+  g.add(head);
+  return g;
+}
+
+// ── Bus stop factory ──
+function createBusStop() {
+  const g = new THREE.Group();
+  const frameMat = new THREE.MeshStandardMaterial({color: 0x228833, roughness: 0.5, metalness: 0.2});
+  const glassMat = new THREE.MeshStandardMaterial({color: 0x99ddee, transparent: true, opacity: 0.45, roughness: 0.1});
+  // Roof
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.12, 1.2), frameMat);
+  roof.position.y = 2.8;
+  g.add(roof);
+  // Two side posts
+  for (const sx of [-1.1, 1.1]) {
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.8, 0.1), frameMat);
+    post.position.set(sx, 1.4, 0);
+    g.add(post);
+  }
+  // Glass back panel
+  const back = new THREE.Mesh(new THREE.BoxGeometry(2.2, 2.4, 0.07), glassMat);
+  back.position.set(0, 1.4, -0.55);
+  g.add(back);
+  // Glass side panel (half)
+  const side = new THREE.Mesh(new THREE.BoxGeometry(0.07, 2.4, 0.55), glassMat);
+  side.position.set(1.1, 1.4, -0.28);
+  g.add(side);
+  // "תחנה" sign on top
+  const sTex = makeCanvasTex('\u05EA\u05D7\u05E0\u05D4', 192, 48, '#228833', '#ffffff', 26);
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.45),
+    new THREE.MeshBasicMaterial({map: sTex, transparent: true, side: THREE.DoubleSide}));
+  sign.position.set(0, 3.1, 0);
+  g.add(sign);
+  // Bench
+  const bench = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.1, 0.5),
+    new THREE.MeshStandardMaterial({color: 0x8B6914, roughness: 0.8}));
+  bench.position.set(0, 0.55, -0.3);
+  g.add(bench);
+  for (const sx of [-0.75, 0.75]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.55, 0.08),
+      new THREE.MeshStandardMaterial({color: 0x666666}));
+    leg.position.set(sx, 0.27, -0.3);
+    g.add(leg);
+  }
+  return g;
+}
+
+// ── Palm tree factory — simplified for performance (2 meshes per tree) ──
+function createPalmTree() {
+  const g = new THREE.Group();
+  const trunk = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.13, 0.22, 4.8, 7),
+    new THREE.MeshStandardMaterial({color: 0x8B6914, roughness: 0.9})
+  );
+  trunk.position.y = 2.4;
+  trunk.rotation.z = (Math.random() - 0.5) * 0.14;
+  g.add(trunk);
+  const canopy = new THREE.Mesh(
+    new THREE.SphereGeometry(1.1, 7, 5),
+    new THREE.MeshStandardMaterial({color: 0x2a8a28, roughness: 0.8})
+  );
+  canopy.scale.set(1, 0.65, 1);
+  canopy.position.y = 5.2;
+  g.add(canopy);
+  return g;
+}
+
+// ── Parked car factory — simplified for performance (2 meshes per car) ──
+const carColors = [0xcc2222, 0x2244cc, 0x228833, 0xdddddd, 0x222222, 0xcc8800, 0x885599];
+function createParkedCar() {
+  const g = new THREE.Group();
+  const col = carColors[Math.random() * carColors.length | 0];
+  const bodyMat = new THREE.MeshStandardMaterial({color: col, roughness: 0.4, metalness: 0.25});
+  const lower = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.7, 3.8), bodyMat);
+  lower.position.y = 0.55;
+  g.add(lower);
+  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.55, 0.62, 2.1), bodyMat);
+  cabin.position.set(0, 1.16, -0.18);
+  g.add(cabin);
+  return g;
+}
+
+// ── Billboard factory ──
+const billboardTexts = [
+  '\u05DE\u05D1\u05E6\u05E2!',            // מבצע!
+  '\u05E7\u05E0\u05D5 \u05E2\u05DB\u05E9\u05D5\u05D5', // קנו עכשיו
+  '\u05E4\u05D9\u05E6\u05D4 24/7',         // פיצה 24/7
+  '\u05D1\u05E0\u05E7 \u05DC\u05D0\u05D5\u05DE\u05D9', // בנק לאומי
+  'SALE!',
+  '\u05D3\u05D9\u05E8\u05D5\u05EA \u05DC\u05E9\u05DB\u05D9\u05E8\u05D4', // דירות לשכירה
+  '\u05E1\u05D5\u05E4\u05E8\u05DE\u05E8\u05E7\u05D8', // סופרמרקט
+];
+const billboardBgs = ['#cc2200','#0055bb','#228833','#dd8800','#9922aa','#333333'];
+function createBillboard(text, bg) {
+  const g = new THREE.Group();
+  const poleMat = new THREE.MeshStandardMaterial({color: 0x777777, roughness: 0.6});
+  // Two poles
+  for (const px of [-1.1, 1.1]) {
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 5.5, 8), poleMat);
+    pole.position.set(px, 2.75, 0);
+    g.add(pole);
+  }
+  // Board backing
+  const board = new THREE.Mesh(new THREE.BoxGeometry(3.5, 2.0, 0.12),
+    new THREE.MeshStandardMaterial({color: 0x222222, roughness: 0.8}));
+  board.position.y = 4.5;
+  g.add(board);
+  // Text face
+  const tex = makeCanvasTex(text, 512, 256, bg, '#ffffff', 68);
+  const face = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 1.9),
+    new THREE.MeshBasicMaterial({map: tex, transparent: true, side: THREE.DoubleSide}));
+  face.position.set(0, 4.5, 0.07);
+  g.add(face);
+  return g;
+}
+
+// ── Populate street with all objects ──
+const lightSpacing  = 30;
+const treeSpacing   = 25;
+const carClusterGap = 80;
+const busStopGap    = 100;
+const billboardGap  = 90;
+const numLights     = Math.ceil(STREET_SPAN / lightSpacing);
+const numTrees      = Math.ceil(STREET_SPAN / treeSpacing);
+const numClusters   = Math.ceil(STREET_SPAN / carClusterGap);
+const numBusStops   = Math.ceil(STREET_SPAN / busStopGap);
+const numBillboards = Math.ceil(STREET_SPAN / billboardGap);
+
+// Street lights — both sides
+for (let i = 0; i < numLights; i++) {
+  for (const side of [-1, 1]) {
+    const sl = createStreetLight();
+    sl.position.set(side * (SIDEWALK_X + 1.0), 0, -i * lightSpacing - Math.random() * 3);
+    // Flip to face inward
+    if (side === -1) sl.rotation.y = Math.PI;
+    scene.add(sl);
+    streetObjects.push(sl);
+  }
+}
+
+// Palm trees — both sides, offset from lights
+for (let i = 0; i < numTrees; i++) {
+  for (const side of [-1, 1]) {
+    const pt = createPalmTree();
+    pt.position.set(side * (SIDEWALK_X + 2.8), 0, -i * treeSpacing - 7 - Math.random() * 4);
+    scene.add(pt);
+    streetObjects.push(pt);
+  }
+}
+
+// Parked car clusters — right side only (parked against curb)
+for (let i = 0; i < numClusters; i++) {
+  const clusterZ = -i * carClusterGap - Math.random() * 15;
+  const carsInCluster = 2 + (Math.random() > 0.5 ? 1 : 0);
+  for (let j = 0; j < carsInCluster; j++) {
+    const car = createParkedCar();
+    const side = Math.random() > 0.4 ? 1 : -1;
+    car.position.set(side * (SIDEWALK_X + 1.2), 0, clusterZ - j * 4.5);
+    car.rotation.y = side === 1 ? 0 : Math.PI;
+    scene.add(car);
+    streetObjects.push(car);
+  }
+}
+
+// Bus stops — alternating sides
+for (let i = 0; i < numBusStops; i++) {
+  const side = i % 2 === 0 ? 1 : -1;
+  const bs = createBusStop();
+  bs.position.set(side * (SIDEWALK_X + 0.5), 0, -i * busStopGap - 20);
+  bs.rotation.y = side === 1 ? -Math.PI / 2 : Math.PI / 2;
+  scene.add(bs);
+  streetObjects.push(bs);
+}
+
+// Billboards — both sides
+for (let i = 0; i < numBillboards; i++) {
+  const side = i % 2 === 0 ? 1 : -1;
+  const txt = billboardTexts[i % billboardTexts.length];
+  const bg  = billboardBgs[i % billboardBgs.length];
+  const bb = createBillboard(txt, bg);
+  bb.position.set(side * (SIDEWALK_X + 3.5), 0, -i * billboardGap - 30);
+  bb.rotation.y = side === 1 ? -Math.PI / 8 : Math.PI / 8; // slight angle toward road
+  scene.add(bb);
+  streetObjects.push(bb);
+}
+
+// Protest crowds on sidewalks
+const protestSigns = [
+  '???? ?????? ?????? ??????',
+  'LOWER PRICES!',
+  'NO MORE!',
+];
+const shirtColors = [0xcc3333, 0x3355cc, 0x33aa33, 0xeeee33, 0xff6600, 0xffffff, 0xcc33cc];
+
+function createProtester() {
+  const g = new THREE.Group();
+  const skinMat = new THREE.MeshStandardMaterial({color:0xe0b090, roughness:0.7});
+  const shirtCol = shirtColors[Math.random()*shirtColors.length|0];
+  const shirtMat = new THREE.MeshStandardMaterial({color:shirtCol, roughness:0.6});
+  const pantsMat = new THREE.MeshStandardMaterial({color:0x334455, roughness:0.7});
+
+  // Head
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.4, 10, 10), skinMat);
+  head.position.y = 3.1; g.add(head);
+
+  // Hair
+  const hairMat = new THREE.MeshStandardMaterial({color: Math.random() > 0.5 ? 0x222222 : 0x553311});
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.36, 8, 4, 0, Math.PI*2, 0, Math.PI*0.5), hairMat);
+  hair.position.y = 3.2; g.add(hair);
+
+  // Torso
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.2, 0.4), shirtMat);
+  torso.position.y = 2.1; g.add(torso);
+
+  // Legs
+  for (const s of [-1, 1]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.24, 1.0, 0.28), pantsMat);
+    leg.position.set(s*0.2, 1.0, 0); g.add(leg);
+  }
+
+  // Arms
+  for (const s of [-1, 1]) {
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.0, 0.2), shirtMat);
+    arm.position.set(s*0.5, 2.2, 0);
+    arm.rotation.z = s * 0.15;
+    g.add(arm);
+  }
+
+  // Shoes
+  const shoeMat = new THREE.MeshStandardMaterial({color:0x333333});
+  for (const s of [-1, 1]) {
+    const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.12, 0.35), shoeMat);
+    shoe.position.set(s*0.2, 0.06, 0.05); g.add(shoe);
+  }
+
+  return g;
+}
+
+function createProtestSign(text) {
+  const g = new THREE.Group();
+  // Stick
+  const stickMat = new THREE.MeshStandardMaterial({color:0x8B7355});
+  const stick = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.0, 0.08), stickMat);
+  stick.position.y = 3.2; g.add(stick);
+  // Board
+  const boardTex = makeCanvasTex(text, 512, 192, '#000000', '#ffffff', 56);
+  const board = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 0.8),
+    new THREE.MeshBasicMaterial({map:boardTex, transparent:true, side:THREE.DoubleSide}));
+  board.position.y = 4.4; g.add(board);
+  return g;
+}
+
+function createProtesterRoadblock() {
+  const g = new THREE.Group();
+  const blackMat = new THREE.MeshStandardMaterial({color:0x111111, roughness:0.7});
+  const whiteMat = new THREE.MeshStandardMaterial({color:0xeeeeee, roughness:0.6});
+  const skinMat  = new THREE.MeshStandardMaterial({color:0xe0b090, roughness:0.7});
+  const signMat  = new THREE.MeshStandardMaterial({color:0x223399, roughness:0.5});
+
+  // One sitting haredi figure per lane
+  const laneXs = [-3, 0, 3];
+  laneXs.forEach(px => {
+    // Sitting torso (short, hunched)
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.42, 0.9, 8), blackMat);
+    torso.position.set(px, 0.6, 0);
+    torso.rotation.x = 0.25;
+    g.add(torso);
+
+    // Head
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.34, 10, 10), skinMat);
+    head.position.set(px, 1.25, 0.1);
+    g.add(head);
+
+    // White shirt visible at chest
+    const shirt = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.35, 0.2), whiteMat);
+    shirt.position.set(px, 0.8, 0.3);
+    g.add(shirt);
+
+    // White beard
+    const beard = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.18, 0.45, 8), whiteMat);
+    beard.position.set(px, 0.95, 0.28);
+    beard.rotation.x = -0.2;
+    g.add(beard);
+
+    // Black hat
+    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.29, 0.38, 10), blackMat);
+    crown.position.set(px, 1.68, 0.05);
+    g.add(crown);
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.52, 0.06, 14), blackMat);
+    brim.position.set(px, 1.51, 0.05);
+    g.add(brim);
+
+    // Crossed legs (two short boxes)
+    for (const s of [-1, 1]) {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.15, 0.22), blackMat);
+      leg.position.set(px + s * 0.18, 0.12, s * 0.18);
+      leg.rotation.y = s * 0.7;
+      g.add(leg);
+    }
+
+    // Arms — raised holding a sign stick
+    for (const s of [-1, 1]) {
+      const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.55, 8), blackMat);
+      arm.position.set(px + s * 0.28, 1.05, 0.05);
+      arm.rotation.z = s * 0.3;
+      arm.rotation.x = -0.35;
+      g.add(arm);
+    }
+
+    // Sign stick
+    const stickMat = new THREE.MeshStandardMaterial({color:0x886633, roughness:0.9});
+    const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.5, 8), stickMat);
+    stick.position.set(px, 1.6, 0.12);
+    g.add(stick);
+
+    // Sign board
+    const signTex = makeCanvasTex('\u05DC\u05D0 \u05E0\u05D2\u05D9\u05E2!', 256, 128, '#223399', '#ffffff', 52);
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.55),
+      new THREE.MeshBasicMaterial({map:signTex, transparent:true, side:THREE.DoubleSide}));
+    sign.position.set(px, 2.2, 0.12);
+    g.add(sign);
+  });
+
+  // Connecting banner across all lanes: "לא לגיוס"
+  const bannerTex = makeCanvasTex('\u05DC\u05D0 \u05DC\u05D2\u05D9\u05D5\u05E1 \u2014 \u05DC\u05D0 \u05DC\u05D2\u05D9\u05D5\u05E1', 512, 96, '#cc0000', '#ffffff', 52);
+  const banner = new THREE.Mesh(new THREE.PlaneGeometry(6.5, 0.55),
+    new THREE.MeshBasicMaterial({map:bannerTex, transparent:true, side:THREE.DoubleSide}));
+  banner.position.set(0, 2.55, 0.12);
+  g.add(banner);
+
+  // Jump hint arrows above
+  const jumpTex = makeCanvasTex('\u2191 JUMP \u2191', 256, 96, null, '#ffdd00', 48);
+  const jumpSign = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 0.75),
+    new THREE.MeshBasicMaterial({map:jumpTex, transparent:true, side:THREE.DoubleSide}));
+  jumpSign.position.set(0, 3.2, 0);
+  g.add(jumpSign);
+  g.userData.jumpSign = jumpSign;
+
+  return g;
+}
+
+function createCrowdGroup(side) {
+  const g = new THREE.Group();
+  const count = 3;
+  // Single file line on the sidewalk, between road edge and buildings
+  const xBase = side * (ROAD_WIDTH/2 + 2);
+  const spacing = 2.5;
+  const totalLen = count * spacing;
+  const faceRoad = side > 0 ? Math.PI/2 : -Math.PI/2;
+  for (let i = 0; i < count; i++) {
+    const p = createProtester();
+    p.position.set(0, 0, i * spacing - totalLen / 2 + spacing / 2);
+    p.rotation.y = faceRoad;
+    g.add(p);
+    const sign = createProtestSign(protestSigns[Math.random()*protestSigns.length|0]);
+    sign.position.set(0, 0, p.position.z);
+    sign.rotation.y = faceRoad;
+    g.add(sign);
+  }
+  g.position.x = xBase;
+  return g;
+}
+
+const crowds = [];
+// Protesters removed for now
+
+// Sun — warm golden disc with soft glow rings
+const sun = new THREE.Mesh(new THREE.SphereGeometry(4.5, 16, 12),
+  new THREE.MeshBasicMaterial({color: 0xffee66}));
+sun.position.set(28, 52, -60); scene.add(sun);
+const sunGlow = new THREE.Mesh(new THREE.SphereGeometry(7, 12, 8),
+  new THREE.MeshBasicMaterial({color: 0xffdd44, transparent: true, opacity: 0.12}));
+sunGlow.position.copy(sun.position); scene.add(sunGlow);
+const sunGlow2 = new THREE.Mesh(new THREE.SphereGeometry(11, 10, 6),
+  new THREE.MeshBasicMaterial({color: 0xffcc22, transparent: true, opacity: 0.05}));
+sunGlow2.position.copy(sun.position); scene.add(sunGlow2);
+
+// Clouds — fewer spheres per cloud, raised higher
+const cloudMat = new THREE.MeshBasicMaterial({color: 0xfff8f0, transparent: true, opacity: 0.88});
+function makeCloud(x, y, z, scale) {
+  const g = new THREE.Group();
+  for (let i = 0; i < 4; i++) {
+    const r = (0.9 + Math.random() * 0.8) * scale;
+    const s = new THREE.Mesh(new THREE.SphereGeometry(r, 8, 6), cloudMat);
+    s.position.set((i - 1.5) * scale * 1.4, Math.random() * scale * 0.35, Math.random() * scale * 0.4);
+    g.add(s);
+  }
+  g.position.set(x, y, z);
+  return g;
+}
+const clouds = [];
+for (let i = 0; i < 10; i++) {
+  const c = makeCloud(
+    (Math.random() - 0.5) * 180,
+    32 + Math.random() * 18,
+    -50 - Math.random() * 110,
+    2.0 + Math.random() * 2.2
+  );
+  clouds.push(c); scene.add(c);
+}
+
+// Ground plane beyond road (grass/dirt)
+const groundPlane = new THREE.Mesh(
+  new THREE.PlaneGeometry(500, 500),
+  new THREE.MeshStandardMaterial({color:0x6a8a50, roughness:0.95})
+);
+groundPlane.rotation.x = -Math.PI/2;
+groundPlane.position.y = -0.05;
+groundPlane.receiveShadow = true;
+scene.add(groundPlane);
+
+const camTarget = new THREE.Vector3(0, 7, 10);
+function updateEnvironment(playerZ) {
+  const numRoadSegs = roadSegs.length;
+  const roadSpan = numRoadSegs * SEGMENT_LENGTH;
+  for (const s of roadSegs) { if (s.position.z > playerZ + 20) { s.position.z -= roadSpan; } }
+  const bldgSpan = buildings.length * 11; // avg spacing ~11 units
+  for (const b of buildings) { if (b.position.z > playerZ + 30) { b.position.z -= bldgSpan + Math.random() * 10; } }
+  for (const o of streetObjects) { if (o.position.z > playerZ + 28) { o.position.z -= STREET_SPAN + 20; } }
+  const crowdSpan = crowds.length * 30;
+  for (const cr of crowds) { if (cr.position.z > playerZ+25) { cr.position.z -= crowdSpan + Math.random()*10; } }
+  for (const c of clouds) { if (c.position.z > playerZ+60) { c.position.z -= 200; c.position.x = (Math.random()-0.5)*150; } }
+  groundPlane.position.z = playerZ;
+  sun.position.z = playerZ - 60;
+  sunGlow.position.z = playerZ - 60;
+  sunGlow2.position.z = playerZ - 60;
+  camTarget.set(0, 8.5, playerZ+14);
+  camera.position.lerp(camTarget, 0.08);
+  camera.lookAt(0, 1, playerZ-28);
+}
+
+// �?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?
+// Israeli bus company schemes: main color, belly/stripe color, roof color, Hebrew name, logo style
+const BUS_SCHEMES = [
+  { main:0x1b8a3e, roof:0x0f5c28, belly:null,     stripe:null,     logoText:'\u05D0\u05D2\u05D3',          logoBg:'#1b8a3e', logoFg:'#ffffff', dest:'\u05EA\u05DC \u05D0\u05D1\u05D9\u05D1 \u05DE\u05E8\u05DB\u05D6' },  // Egged
+  { main:0xcc2200, roof:0x881500, belly:0xf0f0f0,  stripe:null,     logoText:'\u05D3\u05DF',                logoBg:'#cc2200', logoFg:'#ffffff', dest:'\u05D9\u05E8\u05D5\u05E9\u05DC\u05D9\u05DD' },                        // Dan
+  { main:0x1a9068, roof:0x0f6045, belly:null,     stripe:null,     logoText:'X \u05E7\u05D5\u05D5\u05D9\u05DD', logoBg:'#1a9068', logoFg:'#ffffff', dest:'\u05D1\u05E0\u05D9 \u05D1\u05E8\u05E7' },                        // Kavim
+  { main:0x0077cc, roof:0x005599, belly:null,     stripe:0xff6600, logoText:'\u05D0\u05E7\u05E1\u05D8\u05E8\u05D4', logoBg:'#0077cc', logoFg:'#ffffff', dest:'\u05E8\u05D0\u05E9\u05D5\u05DF \u05DC\u05E6\u05D9\u05D5\u05DF' }, // Extra
+  { main:0xff6b00, roof:0xcc4400, belly:0xffffff, stripe:null,     logoText:'\u05DE\u05D8\u05E8\u05D5\u05E4\u05D5\u05DC\u05D9\u05DF', logoBg:'#ff6b00', logoFg:'#ffffff', dest:'\u05D7\u05D9\u05E4\u05D4' },                // Metropoline
+];
+
+function createBus(colorIdx) {
+  const s = BUS_SCHEMES[colorIdx % 5];
+  const g = new THREE.Group();
+
+  const BW = 2.4, BH = 2.8, BL = 6.0; // width, height, length
+  const halfL = BL / 2;
+
+  // Main body
+  const bodyMat = new THREE.MeshStandardMaterial({color: s.main, roughness: 0.5});
+  const body = new THREE.Mesh(new THREE.BoxGeometry(BW, BH, BL), bodyMat);
+  body.position.y = BH / 2 + 0.15;
+  body.castShadow = true;
+  g.add(body);
+
+  // Roof (slightly narrower, darker)
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(BW - 0.1, 0.35, BL - 0.2),
+    new THREE.MeshStandardMaterial({color: s.roof, roughness: 0.6}));
+  roof.position.y = BH + 0.15 + 0.17;
+  g.add(roof);
+
+  // White belly panel (lower third) for Dan and Metropoline
+  if (s.belly) {
+    for (const rz of [0]) {
+      const bellyH = BH * 0.38;
+      const belly = new THREE.Mesh(new THREE.BoxGeometry(BW + 0.02, bellyH, BL + 0.02),
+        new THREE.MeshStandardMaterial({color: s.belly, roughness: 0.5}));
+      belly.position.y = bellyH / 2 + 0.15;
+      g.add(belly);
+    }
+  }
+
+  // Orange diagonal stripe for Extra — simplified as two angled panels on each side
+  if (s.stripe) {
+    const stripeMat = new THREE.MeshStandardMaterial({color: s.stripe, roughness: 0.4});
+    for (const sx of [-1, 1]) {
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.06, BH * 0.55, BL * 0.65), stripeMat);
+      stripe.position.set(sx * (BW / 2 + 0.04), BH * 0.3 + 0.15, -BL * 0.05);
+      stripe.rotation.z = sx * 0.38;
+      g.add(stripe);
+    }
+    // Orange front accent
+    const frontStripe = new THREE.Mesh(new THREE.BoxGeometry(BW + 0.02, BH * 0.22, 0.07), stripeMat);
+    frontStripe.position.set(0, BH * 0.18 + 0.15, halfL + 0.04);
+    g.add(frontStripe);
+  }
+
+  // Company logo on both sides
+  const logoTex = makeCanvasTex(s.logoText, 512, 128, s.logoBg, s.logoFg, 54);
+  for (const sx of [-1, 1]) {
+    const logo = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.55),
+      new THREE.MeshBasicMaterial({map: logoTex, transparent: true, side: THREE.DoubleSide}));
+    logo.position.set(sx * (BW / 2 + 0.02), BH * 0.55 + 0.15, 0.3);
+    logo.rotation.y = sx * Math.PI / 2;
+    g.add(logo);
+  }
+
+  // Destination display at top-front (dark board with Hebrew text)
+  const destTex = makeCanvasTex(s.dest, 384, 64, '#1a1a1a', '#ffdd00', 28);
+  const destBoard = new THREE.Mesh(new THREE.BoxGeometry(BW * 0.65, 0.32, 0.06),
+    new THREE.MeshStandardMaterial({color: 0x1a1a1a, roughness: 0.8}));
+  destBoard.position.set(0, BH + 0.0, halfL + 0.04);
+  g.add(destBoard);
+  const destLabel = new THREE.Mesh(new THREE.PlaneGeometry(BW * 0.62, 0.27),
+    new THREE.MeshBasicMaterial({map: destTex, transparent: true}));
+  destLabel.position.set(0, BH + 0.0, halfL + 0.08);
+  g.add(destLabel);
+
+  // Windows — front windshield
+  const winMat = new THREE.MeshStandardMaterial({color: 0x87ceeb, transparent: true, opacity: 0.65, roughness: 0.1});
+  const frontWin = new THREE.Mesh(new THREE.PlaneGeometry(BW * 0.72, BH * 0.42), winMat);
+  frontWin.position.set(0, BH * 0.62 + 0.15, halfL + 0.02);
+  g.add(frontWin);
+
+  // Side windows (3 per side)
+  for (const sx of [-1, 1]) {
+    for (let i = 0; i < 4; i++) {
+      const sw = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.7), winMat);
+      sw.position.set(sx * (BW / 2 + 0.02), BH * 0.65 + 0.15, halfL - 1.0 - i * 1.1);
+      sw.rotation.y = sx * -Math.PI / 2;
+      g.add(sw);
+    }
+  }
+
+  // Door outline on right side (front)
+  const doorMat = new THREE.MeshStandardMaterial({color: 0x222222, roughness: 0.8});
+  const door = new THREE.Mesh(new THREE.BoxGeometry(0.06, BH * 0.72, 0.75), doorMat);
+  door.position.set(-(BW / 2 + 0.04), BH * 0.36 + 0.15, halfL - 0.9);
+  g.add(door);
+
+  // Wheels — 4 rubber wheels with silver hub cap
+  const whlMat = new THREE.MeshStandardMaterial({color: 0x1a1a1a, roughness: 0.9});
+  const hubMat = new THREE.MeshStandardMaterial({color: 0xaaaaaa, roughness: 0.4});
+  for (const [x, z] of [[1.25, 1.9], [1.25, -1.9], [-1.25, 1.9], [-1.25, -1.9]]) {
+    const wh = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.28, 14), whlMat);
+    wh.rotation.z = Math.PI / 2;
+    wh.position.set(x, 0.38, z);
+    g.add(wh);
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.30, 8), hubMat);
+    hub.rotation.z = Math.PI / 2;
+    hub.position.set(x, 0.38, z);
+    g.add(hub);
+  }
+
+  // Headlights (yellow/white)
+  const hlMat = new THREE.MeshStandardMaterial({color: 0xffffcc, emissive: 0xffff88, emissiveIntensity: 0.9, roughness: 0.2});
+  for (const x of [-0.7, 0.7]) {
+    const hl = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.18, 0.08), hlMat);
+    hl.position.set(x, BH * 0.22 + 0.15, halfL + 0.05);
+    g.add(hl);
+  }
+
+  // Taillights (red)
+  const tlMat = new THREE.MeshStandardMaterial({color: 0xff2222, emissive: 0xff0000, emissiveIntensity: 0.7});
+  for (const x of [-0.7, 0.7]) {
+    const tl = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.22, 0.08), tlMat);
+    tl.position.set(x, BH * 0.22 + 0.15, -halfL - 0.05);
+    g.add(tl);
+  }
+
+  // Store wheel meshes for animation (first 4 added after hub)
+  g.userData.wheels = [];
+  g.children.forEach(c => {
+    if (c.geometry && c.geometry.parameters && c.geometry.parameters.radiusTop === 0.38) {
+      g.userData.wheels.push(c);
+    }
+  });
+
+  return g;
+}
+
+function createTrain() {
+  const g = new THREE.Group();
+  const bodyMat = new THREE.MeshStandardMaterial({color:0x2266bb, roughness:0.5});
+  const stripeMat = new THREE.MeshStandardMaterial({color:0xdddddd});
+  const winMat = new THREE.MeshStandardMaterial({color:0x88ccee, transparent:true, opacity:0.7});
+  const wheelMat = new THREE.MeshStandardMaterial({color:0x1a1a1a});
+
+  // Main body spans all 3 lanes (wide, low-ish)
+  const body = new THREE.Mesh(new THREE.BoxGeometry(8, 2.8, 3.5), bodyMat);
+  body.position.y = 1.6; body.castShadow = true; g.add(body);
+
+  // Roof
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(7.8, 0.3, 3.3),
+    new THREE.MeshStandardMaterial({color:0x1a4488}));
+  roof.position.y = 3.15; g.add(roof);
+
+  // White stripe along sides
+  for (const sz of [-1, 1]) {
+    const stripe = new THREE.Mesh(new THREE.PlaneGeometry(7.6, 0.4), stripeMat);
+    stripe.position.set(0, 1.8, sz * 1.76);
+    g.add(stripe);
+  }
+
+  // Windows on both sides
+  for (const sz of [-1, 1]) {
+    for (let wx = -3; wx <= 3; wx += 1.2) {
+      const win = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.9), winMat);
+      win.position.set(wx, 2.3, sz * 1.76);
+      g.add(win);
+    }
+  }
+
+  // Wheels
+  for (const wx of [-2.8, -1, 1, 2.8]) {
+    for (const wz of [-1, 1]) {
+      const wh = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.2, 12), wheelMat);
+      wh.rotation.x = Math.PI / 2;
+      wh.position.set(wx, 0.3, wz * 1.6);
+      g.add(wh);
+    }
+  }
+
+  // Headlights
+  const hlMat = new THREE.MeshStandardMaterial({color:0xffff00, emissive:0xffff00, emissiveIntensity:0.8});
+  for (const side of [-1, 1]) {
+    const hl = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8), hlMat);
+    hl.position.set(side * 3.8, 1.2, 0);
+    g.add(hl);
+  }
+
+  // Label: פתח תקווה (Petah Tikva)
+  const labelText = '\u05E4\u05EA\u05D7 \u05EA\u05E7\u05D5\u05D5\u05D4'; // פתח תקווה
+  const labelTex = makeCanvasTex(labelText, 1024, 128, '#ffffff', '#1a2266', 88);
+  const label = new THREE.Mesh(new THREE.PlaneGeometry(6.5, 0.65),
+    new THREE.MeshBasicMaterial({map:labelTex, transparent:true, side:THREE.DoubleSide}));
+  label.position.set(0, 2.4, 1.77);
+  g.add(label);
+
+  // Red stripe at bottom
+  const redStripe = new THREE.Mesh(new THREE.PlaneGeometry(7.6, 0.3),
+    new THREE.MeshBasicMaterial({color:0xcc2222}));
+  for (const sz of [-1, 1]) {
+    const rs = redStripe.clone();
+    rs.position.set(0, 0.5, sz * 1.76);
+    g.add(rs);
+  }
+
+  return g;
+}
+
+function createBarrier() {
+  const g = new THREE.Group();
+  const oMat = new THREE.MeshStandardMaterial({color:0xff6600});
+  const wMat = new THREE.MeshStandardMaterial({color:0xffffff});
+  for (let row = 0; row < 2; row++) {
+    const y = 0.4 + row * 0.6;
+    for (let i = 0; i < 8; i++) {
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.2, 0.3), i%2===0 ? oMat : wMat);
+      bar.position.set(-1.05 + i*0.3, y, 0); g.add(bar);
+    }
+  }
+  const pMat = new THREE.MeshStandardMaterial({color:0x444444});
+  for (const x of [-1.1, 1.1]) {
+    const p = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.2, 0.08), pMat);
+    p.position.set(x, 0.6, 0); g.add(p);
+  }
+  const light = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8),
+    new THREE.MeshStandardMaterial({color:0xff0000, emissive:0xff0000, emissiveIntensity:0.8}));
+  light.position.set(0, 1.25, 0); g.add(light);
+  g.userData.light = light;
+  return g;
+}
+
+function createOldMan() {
+  const g = new THREE.Group();
+  const skinMat = new THREE.MeshStandardMaterial({color:0xe8b89d, roughness:0.7});
+  const shirtMat = new THREE.MeshStandardMaterial({color:0xeeeeee, roughness:0.6});
+  const pantsMat = new THREE.MeshStandardMaterial({color:0x555555, roughness:0.7});
+  const shoeMat = new THREE.MeshStandardMaterial({color:0x3a2a1a, roughness:0.8});
+
+  // Body hunched over � scaled to match MC size
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.5, 1.4, 8), shirtMat);
+  torso.position.set(0, 2.1, 0);
+  torso.rotation.x = 0.4;
+  g.add(torso);
+
+  // Head � face texture (inspector photo), same size as Miri's head so everyone can see
+  const headTex = createInspectorHeadTexture();
+  const head = new THREE.Mesh(new THREE.CircleGeometry(0.95, 32),
+    new THREE.MeshBasicMaterial({map: headTex, transparent: true, side: THREE.DoubleSide}));
+  head.position.set(0, 3.6, -0.2);
+  g.add(head);
+  g.userData.head = head;
+
+  // Legs
+  for (const side of [-1, 1]) {
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 1.0, 6), pantsMat);
+    leg.position.set(side * 0.2, 0.6, 0.05);
+    g.add(leg);
+    const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.12, 0.35), shoeMat);
+    shoe.position.set(side * 0.2, 0.1, 0.1);
+    g.add(shoe);
+  }
+
+  // Gun in front, arms extended like aiming stance (both hands on gun)
+  const gun = createGun();
+  gun.position.set(0, 1.95, 0.7);
+  gun.rotation.y = Math.PI;
+  gun.rotation.x = 0.02;
+  g.add(gun);
+  g.userData.gun = gun;
+
+  // Both arms extended forward, hands together on gun (like the reference picture)
+  const armMat = shirtMat;
+  const handMat = skinMat;
+  const gz = 0.7;
+  const gy = 1.95;
+  // Right arm extended forward to grip
+  const rightArm = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.5, 8), armMat);
+  rightArm.position.set(0.18, gy - 0.1, gz * 0.4);
+  rightArm.rotation.z = 0.2;
+  rightArm.rotation.x = -0.4;
+  g.add(rightArm);
+  const rightHand = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 10), handMat);
+  rightHand.position.set(0.08, gy - 0.06, gz * 0.55);
+  g.add(rightHand);
+  // Left arm extended, support hand wrapped near right hand
+  const leftArm = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.48, 8), armMat);
+  leftArm.position.set(-0.18, gy - 0.08, gz * 0.5);
+  leftArm.rotation.z = -0.2;
+  leftArm.rotation.x = -0.38;
+  g.add(leftArm);
+  const leftHand = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 10), handMat);
+  leftHand.position.set(-0.05, gy - 0.04, gz * 0.62);
+  g.add(leftHand);
+
+  // "!" sign above head
+  const warnTex = makeCanvasTex('!', 128, 128, null, '#ff0000', 72);
+  const warn = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9),
+    new THREE.MeshBasicMaterial({map:warnTex, transparent:true, side:THREE.DoubleSide}));
+  warn.position.set(0, 4.7, 0);
+  g.add(warn);
+  g.userData.warn = warn;
+
+  return g;
+}
+
+function createNetanyahuHeadTexture() {
+  const size = 512;
+  const c = document.createElement('canvas'); c.width = size; c.height = size;
+  const ctx = c.getContext('2d');
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const cx = size / 2, r = size / 2 - 4;
+  function drawFallback() {
+    ctx.fillStyle = '#e8c8a0';
+    ctx.beginPath(); ctx.arc(cx, cx, r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 60px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('Bibi', cx, cx);
+  }
+  function draw() {
+    ctx.clearRect(0, 0, size, size);
+    ctx.fillStyle = '#e8c8a0';
+    ctx.beginPath(); ctx.arc(cx, cx, r, 0, Math.PI * 2); ctx.fill();
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cx, r, 0, Math.PI * 2); ctx.closePath(); ctx.clip();
+    if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
+      const iw = img.naturalWidth, ih = img.naturalHeight;
+      // faceScale 1.0 = show full image, no cropping — ensures mouth is visible
+      const sw = iw, sh = ih;
+      const sx = 0, sy = 0;
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, size, size);
+    } else {
+      drawFallback();
+    }
+    ctx.restore();
+    ctx.strokeStyle = '#003399'; ctx.lineWidth = 8;
+    ctx.beginPath(); ctx.arc(cx, cx, r - 4, 0, Math.PI * 2); ctx.stroke();
+    tex.needsUpdate = true;
+  }
+  img.onload = draw; img.onerror = draw;
+  img.src = 'netanyahu.png';
+  draw();
+  return tex;
+}
+
+function createNetanyahu() {
+  const g = new THREE.Group();
+  const suitMat  = new THREE.MeshStandardMaterial({color:0x1a237e, roughness:0.6});
+  const shirtMat = new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.5});
+  const tieMat   = new THREE.MeshStandardMaterial({color:0xcc0000, roughness:0.5});
+  const skinMat  = new THREE.MeshStandardMaterial({color:0xe8c8a0, roughness:0.7});
+  const shoeMat  = new THREE.MeshStandardMaterial({color:0x111111, roughness:0.8});
+
+  // Torso — stocky suit
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.58, 1.5, 10), suitMat);
+  torso.position.set(0, 2.05, 0);
+  torso.rotation.x = 0.22;
+  g.add(torso);
+
+  // White shirt visible at chest
+  const shirt = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.9, 0.22), shirtMat);
+  shirt.position.set(0, 2.1, 0.42);
+  g.add(shirt);
+
+  // Red tie
+  const tie = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.7, 0.06), tieMat);
+  tie.position.set(0, 2.0, 0.52);
+  g.add(tie);
+
+  // Head — big face disc
+  const headTex = createNetanyahuHeadTexture();
+  const head = new THREE.Mesh(new THREE.CircleGeometry(0.95, 32),
+    new THREE.MeshBasicMaterial({map: headTex, transparent: true, side: THREE.DoubleSide}));
+  head.position.set(0, 3.55, -0.1);
+  g.add(head);
+  g.userData.head = head;
+
+  // Arms (will be animated as running)
+  const arms = [];
+  for (const side of [-1, 1]) {
+    const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.11, 0.52, 8), suitMat);
+    upper.position.set(side * 0.62, 2.1, 0);
+    upper.rotation.z = side * 0.18;
+    g.add(upper); arms.push(upper);
+    const fore = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.44, 8), suitMat);
+    fore.position.set(0, -0.48, 0);
+    upper.add(fore);
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), skinMat);
+    hand.position.set(0, -0.44, 0);
+    fore.add(hand);
+  }
+  g.userData.arms = arms;
+
+  // Legs (animated)
+  const legs = [];
+  for (const side of [-1, 1]) {
+    const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.17, 0.55, 8), suitMat);
+    thigh.position.set(side * 0.22, 0.88, 0);
+    g.add(thigh); legs.push(thigh);
+    const calf = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.5, 8), suitMat);
+    calf.position.set(0, -0.52, 0);
+    thigh.add(calf);
+    const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.12, 0.38), shoeMat);
+    shoe.position.set(0, -0.48, 0.06);
+    calf.add(shoe);
+  }
+  g.userData.legs = legs;
+
+  // "!" warning sign above head
+  const warnTex = makeCanvasTex('!', 128, 128, null, '#ff0000', 72);
+  const warn = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9),
+    new THREE.MeshBasicMaterial({map:warnTex, transparent:true, side:THREE.DoubleSide}));
+  warn.position.set(0, 4.7, 0);
+  g.add(warn);
+  g.userData.warn = warn;
+
+  return g;
+}
+
+function createGun() {
+  const g = new THREE.Group();
+  const s = 2.5;
+  const mat = new THREE.MeshStandardMaterial({color: 0x1a1a1a, roughness: 0.45});
+  // Pistol grip (angled down for rear hand)
+  const grip = new THREE.Mesh(new THREE.BoxGeometry(0.2 * s, 0.5 * s, 0.22 * s), mat);
+  grip.position.set(0, -0.1 * s, 0.06 * s);
+  grip.rotation.x = 0.28;
+  g.add(grip);
+  // Trigger guard + frame
+  const guard = new THREE.Mesh(new THREE.BoxGeometry(0.15 * s, 0.1 * s, 0.2 * s), mat);
+  guard.position.set(0, 0.06 * s, -0.08 * s);
+  g.add(guard);
+  // Slide (top, with clear front)
+  const slide = new THREE.Mesh(new THREE.BoxGeometry(0.17 * s, 0.12 * s, 0.5 * s), mat);
+  slide.position.set(0, 0.16 * s, -0.35 * s);
+  g.add(slide);
+  // Rear sight
+  const rearSight = new THREE.Mesh(new THREE.BoxGeometry(0.08 * s, 0.06 * s, 0.06 * s), mat);
+  rearSight.position.set(0, 0.22 * s, -0.12 * s);
+  g.add(rearSight);
+  // Front sight
+  const frontSight = new THREE.Mesh(new THREE.BoxGeometry(0.06 * s, 0.05 * s, 0.05 * s), mat);
+  frontSight.position.set(0, 0.2 * s, -0.58 * s);
+  g.add(frontSight);
+  // Barrel
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.045 * s, 0.05 * s, 0.28 * s, 8), mat);
+  barrel.rotation.x = Math.PI / 2;
+  barrel.position.set(0, 0.18 * s, -0.65 * s);
+  g.add(barrel);
+  return g;
+}
+
+function createBulletMesh() {
+  const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8),
+    new THREE.MeshBasicMaterial({color: 0xffaa00}));
+  mesh.position.y = 1.5;
+  return mesh;
+}
+
+function createYellowBall() {
+  const g = new THREE.Group();
+  const ball = new THREE.Mesh(new THREE.SphereGeometry(0.9, 24, 24),
+    new THREE.MeshStandardMaterial({color: 0xffdd00, roughness: 0.3, metalness: 0.1}));
+  ball.position.y = 2.2;
+  ball.castShadow = true;
+  g.add(ball);
+  return g;
+}
+
+function createSign() {
+  const g = new THREE.Group();
+  const pMat = new THREE.MeshStandardMaterial({color:0x444444});
+  for (const x of [-1.2, 1.2]) {
+    const p = new THREE.Mesh(new THREE.BoxGeometry(0.08, 4, 0.08), pMat);
+    p.position.set(x, 2, 0); g.add(p);
+  }
+  const sign = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.8, 0.15),
+    new THREE.MeshStandardMaterial({color:0x6622aa}));
+  sign.position.set(0, 3.6, 0); g.add(sign);
+  const warn = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.5),
+    new THREE.MeshBasicMaterial({map:makeCanvasTex('\u26A0 LOW BRIDGE \u26A0', 256, 64, '#6622aa', '#ffcc00', 28), transparent:true, side:THREE.DoubleSide}));
+  warn.position.set(0, 3.6, 0.08); g.add(warn);
+  return g;
+}
+
+function createPoliceBarrier() {
+  const g = new THREE.Group();
+
+  const orangeMat = new THREE.MeshStandardMaterial({color: 0xff6600, roughness: 0.5});
+  const whiteMat  = new THREE.MeshStandardMaterial({color: 0xffffff, roughness: 0.5});
+  const greyMat   = new THREE.MeshStandardMaterial({color: 0x555555, roughness: 0.7});
+  const blueMat   = new THREE.MeshStandardMaterial({color: 0x003399, roughness: 0.5});
+
+  // Two striped poles with base feet
+  for (const x of [-1.1, 1.1]) {
+    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.12, 0.4), greyMat);
+    foot.position.set(x, 0.06, 0);
+    g.add(foot);
+    const stripeH = 0.38;
+    const stripeColors = [orangeMat, whiteMat, orangeMat, whiteMat, orangeMat, whiteMat];
+    stripeColors.forEach((mat, i) => {
+      const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, stripeH, 8), mat);
+      stripe.position.set(x, 0.18 + stripeH * i + stripeH / 2, 0);
+      g.add(stripe);
+    });
+  }
+
+  // Horizontal boom bar — red/white stripes
+  const barSegW = 0.35;
+  const barSegCount = 6;
+  for (let i = 0; i < barSegCount; i++) {
+    const mat = i % 2 === 0
+      ? new THREE.MeshStandardMaterial({color: 0xdd1111, roughness: 0.4})
+      : whiteMat;
+    const seg = new THREE.Mesh(new THREE.BoxGeometry(barSegW, 0.14, 0.14), mat);
+    seg.position.set(-((barSegCount - 1) * barSegW / 2) + i * barSegW, 2.35, 0);
+    g.add(seg);
+  }
+
+  // Blue STOP sign: עצור
+  const stopTex = makeCanvasTex('\u05E2\u05E6\u05D5\u05E8', 256, 128, '#003399', '#ffffff', 56);
+  const stopSign = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.55, 0.08), blueMat);
+  stopSign.position.set(0, 1.85, 0);
+  g.add(stopSign);
+  const stopLabel = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.45),
+    new THREE.MeshBasicMaterial({map: stopTex, transparent: true, side: THREE.DoubleSide}));
+  stopLabel.position.set(0, 1.85, 0.05);
+  g.add(stopLabel);
+
+  // Blinking blue police light on top
+  const lightMat = new THREE.MeshStandardMaterial({color: 0x2299ff, emissive: 0x0044ff, emissiveIntensity: 0.8});
+  const light = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), lightMat);
+  light.position.set(0, 2.52, 0);
+  g.add(light);
+  g.userData.light = light;
+
+  return g;
+}
+
+// ── Protests Roadblock — burning tires block 2 lanes, dodge to the open one ──
+function createRoadblock(openLane) {
+  const g = new THREE.Group();
+  const blackMat  = new THREE.MeshStandardMaterial({color:0x111111, roughness:0.9});
+  const brownMat  = new THREE.MeshStandardMaterial({color:0x5c3a1e, roughness:0.8});
+  const redMat    = new THREE.MeshStandardMaterial({color:0xcc1111, roughness:0.5});
+
+  const flames = [];
+  const laneXs = [-3, 0, 3];
+
+  laneXs.forEach((px, i) => {
+    if (i === openLane) return; // leave this lane clear
+
+    // Tire stack (2 tires)
+    for (let t = 0; t < 2; t++) {
+      const tire = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.18, 8, 14), blackMat);
+      tire.rotation.x = Math.PI / 2;
+      tire.position.set(px, 0.22 + t * 0.55, 0);
+      g.add(tire);
+    }
+
+    // Wooden plank across the lane
+    const plank = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.18, 0.14), brownMat);
+    plank.position.set(px, 1.55, 0);
+    g.add(plank);
+
+    // Red spray-paint text on plank
+    const slogans = ['\u05D4\u05DE\u05DE\u05E9\u05DC\u05D4 = \u05E9\u05E8\u05D9\u05E4\u05D4', '\u05DC\u05D0 \u05E0\u05E2\u05D1\u05D5\u05E8!', 'NO PASARAN'];
+    const sloganTex = makeCanvasTex(slogans[i % slogans.length], 256, 64, null, '#cc1111', 36);
+    const sloganPlane = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.45),
+      new THREE.MeshBasicMaterial({map:sloganTex, transparent:true, side:THREE.DoubleSide}));
+    sloganPlane.position.set(px, 1.55, 0.08);
+    g.add(sloganPlane);
+
+    // Flame cones (3 per blocked lane)
+    for (let f = 0; f < 3; f++) {
+      const hue = f % 2 === 0 ? 0xff4400 : 0xffaa00;
+      const flameMat = new THREE.MeshStandardMaterial({
+        color: hue, emissive: hue, emissiveIntensity: 1.2,
+        transparent: true, opacity: 0.85
+      });
+      const flame = new THREE.Mesh(new THREE.ConeGeometry(0.28 - f * 0.04, 1.8 + f * 0.5, 6), flameMat);
+      flame.position.set(px + (f - 1) * 0.28, 1.8 + f * 0.35, 0.05);
+      flame.userData.baseY   = flame.position.y;
+      flame.userData.phase   = f * 1.1;
+      flame.userData.isFlame = true;
+      g.add(flame);
+      flames.push(flame);
+    }
+  });
+
+  // Open-lane arrow hint (floats above)
+  const arrowLabels = ['\u2190 GO', '\u2191 GO', 'GO \u2192'];
+  const arrowTex = makeCanvasTex(arrowLabels[openLane], 256, 96, null, '#00ff88', 52);
+  const arrowSign = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.65),
+    new THREE.MeshBasicMaterial({map:arrowTex, transparent:true, side:THREE.DoubleSide}));
+  arrowSign.position.set(laneXs[openLane], 3.2, 0);
+  g.add(arrowSign);
+  g.userData.arrowSign = arrowSign;
+
+  g.userData.flames   = flames;
+  g.userData.openLane = openLane;
+  return g;
+}
+
+// ── Tax Collector — drains coins, throws fine letters, magnets nearby coins ──
+function createGoldknopfHeadTexture() {
+  const size = 512;
+  const c = document.createElement('canvas'); c.width = size; c.height = size;
+  const ctx = c.getContext('2d');
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const cx = size / 2, r = size / 2 - 4;
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  function drawFallback() {
+    ctx.fillStyle = '#e8c090';
+    ctx.beginPath(); ctx.arc(cx, cx, r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#555';
+    ctx.font = 'bold 48px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('\u05D2\u05D5\u05DC\u05D3', cx, cx);
+  }
+  function draw() {
+    ctx.clearRect(0, 0, size, size);
+    ctx.fillStyle = '#e8c090';
+    ctx.beginPath(); ctx.arc(cx, cx, r, 0, Math.PI * 2); ctx.fill();
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cx, r, 0, Math.PI * 2); ctx.closePath(); ctx.clip();
+    if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
+      // Crop: focus on face — center-top region of the photo
+      const iw = img.naturalWidth, ih = img.naturalHeight;
+      ctx.drawImage(img, 0, 0, size, size);
+    } else {
+      drawFallback();
+    }
+    ctx.restore();
+    ctx.strokeStyle = '#111111'; ctx.lineWidth = 8;
+    ctx.beginPath(); ctx.arc(cx, cx, r - 4, 0, Math.PI * 2); ctx.stroke();
+    tex.needsUpdate = true;
+  }
+  img.onload = draw;
+  img.onerror = draw;
+  img.src = 'goldknopf.png?' + Date.now();
+  draw();
+  return tex;
+}
+
+function createGoldknopf() {
+  const g = new THREE.Group();
+  const suitMat  = new THREE.MeshStandardMaterial({color: 0x1a1a1a, roughness: 0.65});
+  const shirtMat = new THREE.MeshStandardMaterial({color: 0xf5f5f5, roughness: 0.5});
+  const tieMat   = new THREE.MeshStandardMaterial({color: 0x111111, roughness: 0.6});
+  const bagMat   = new THREE.MeshStandardMaterial({color: 0x228833, roughness: 0.6});
+  const beardMat = new THREE.MeshStandardMaterial({color: 0xddddd0, roughness: 0.9});
+  const hatMat   = new THREE.MeshStandardMaterial({color: 0x111111, roughness: 0.75});
+  const paperMat = new THREE.MeshStandardMaterial({color: 0xf5e87a, roughness: 0.6});
+
+  // Suit trousers
+  for (const lx of [-0.18, 0.18]) {
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.11, 1.15, 8), suitMat);
+    leg.position.set(lx, 0.58, 0);
+    g.add(leg);
+  }
+  // Black shoes
+  for (const lx of [-0.18, 0.18]) {
+    const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.14, 0.38), new THREE.MeshStandardMaterial({color: 0x0a0a0a, roughness: 0.9}));
+    shoe.position.set(lx, 0.07, 0.06);
+    g.add(shoe);
+  }
+  // Suit jacket torso
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.82, 1.1, 0.42), suitMat);
+  torso.position.y = 1.72;
+  g.add(torso);
+  // White shirt visible at chest
+  const shirt = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.72, 0.44), shirtMat);
+  shirt.position.set(0, 1.78, 0.18);
+  g.add(shirt);
+  // Black tie
+  const tie = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.65, 0.06), tieMat);
+  tie.position.set(0, 1.72, 0.44);
+  g.add(tie);
+  // Right arm — holds rolled draft order scroll
+  const rArm = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.09, 0.88, 7), suitMat);
+  rArm.position.set(0.52, 1.55, 0);
+  rArm.rotation.z = 0.4;
+  g.add(rArm);
+  g.userData.rArm = rArm;
+  // Draft order scroll (yellow)
+  const scroll = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.42, 8), paperMat);
+  scroll.rotation.z = Math.PI / 2;
+  scroll.position.set(0.88, 1.1, 0);
+  g.add(scroll);
+  // Left arm — holds money bag, stored for animation
+  const lArm = new THREE.Mesh(new THREE.CylinderGeometry(0.10, 0.09, 0.88, 7), suitMat);
+  lArm.position.set(-0.52, 1.68, 0);
+  lArm.rotation.z = -0.9;
+  g.add(lArm);
+  g.userData.lArm = lArm;
+  // Money bag (green sphere)
+  const bag = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 7), bagMat);
+  bag.position.set(-0.92, 2.05, 0);
+  g.add(bag);
+  g.userData.bag = bag;
+  const bagTie = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.16, 6),
+    new THREE.MeshStandardMaterial({color: 0xccaa44, roughness: 0.7}));
+  bagTie.position.set(-0.92, 2.28, 0);
+  g.add(bagTie);
+  const bagLabel = new THREE.Mesh(new THREE.PlaneGeometry(0.28, 0.28),
+    new THREE.MeshBasicMaterial({map: _taxBagTex, transparent: true, side: THREE.DoubleSide}));
+  bagLabel.position.set(-0.92, 2.05, 0.23);
+  g.add(bagLabel);
+  // Head — face disc with photo
+  const headTex = createGoldknopfHeadTexture();
+  const head = new THREE.Mesh(new THREE.CircleGeometry(1.15, 20),
+    new THREE.MeshBasicMaterial({map: headTex, transparent: true, side: THREE.DoubleSide}));
+  head.position.set(0, 3.3, 0.1);
+  g.add(head);
+  g.userData.head = head;
+  // Wide-brim fedora hat — wide flat brim
+  const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.88, 0.88, 0.07, 16), hatMat);
+  brim.position.set(0, 4.3, 0);
+  g.add(brim);
+  // Fedora crown (tall)
+  const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.42, 0.52, 14), hatMat);
+  crown.position.set(0, 4.56, 0);
+  g.add(crown);
+  // Hat band (slightly lighter strip)
+  const band = new THREE.Mesh(new THREE.CylinderGeometry(0.43, 0.43, 0.09, 14),
+    new THREE.MeshStandardMaterial({color: 0x2a2a2a, roughness: 0.8}));
+  band.position.set(0, 4.34, 0);
+  g.add(band);
+  // Warning "גיוס!" sign above head
+  const warn = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1),
+    new THREE.MeshBasicMaterial({map: _taxWarnTex, transparent: true, side: THREE.DoubleSide}));
+  warn.position.set(0, 5.7, 0);
+  g.add(warn);
+  g.userData.warn = warn;
+
+  return g;
+}
+
+// ── Draft order (צו גיוס) projectile mesh ──
+function createJobApplicationTexture() {
+  const size = 512;
+  const c = document.createElement('canvas'); c.width = size; c.height = size;
+  const ctx = c.getContext('2d');
+  // Dark olive background for high contrast
+  ctx.fillStyle = '#6b7a3a'; ctx.fillRect(0, 0, size, size);
+  // Outer border thick dark brown
+  ctx.strokeStyle = '#222200'; ctx.lineWidth = 10;
+  ctx.strokeRect(5, 5, size - 10, size - 10);
+  // Inner border
+  ctx.strokeStyle = '#333300'; ctx.lineWidth = 3;
+  ctx.strokeRect(18, 18, size - 36, size - 36);
+  // Top header bar
+  ctx.fillStyle = '#c8c060'; ctx.fillRect(18, 18, size - 36, 65);
+  ctx.strokeStyle = '#555533'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(14, 74); ctx.lineTo(size - 14, 74); ctx.stroke();
+  // Header text - right to left Hebrew
+  ctx.fillStyle = '#222200';
+  ctx.font = 'bold 18px Arial'; ctx.textAlign = 'right';
+  ctx.fillText('\u05DE\u05E9\u05E8\u05D3 \u05D4\u05D1\u05D9\u05D8\u05D7\u05D5\u05DF', size - 22, 40);
+  ctx.textAlign = 'left';
+  ctx.fillText('\u05DE\u05E8\u05DB\u05D6 \u05D4\u05D2\u05D9\u05D5\u05E1', 22, 40);
+  ctx.font = '13px Arial'; ctx.textAlign = 'center';
+  ctx.fillText('\u05DC\u05E9\u05DB\u05EA \u05D9\u05E8\u05D5\u05E9\u05DC\u05D9\u05DD', size/2, 62);
+  // Big title: צו גיוס — large and bold
+  ctx.fillStyle = '#000000';
+  ctx.font = 'bold 96px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('\u05E6\u05D5 \u05D2\u05D9\u05D5\u05E1', size/2, 158);
+  // Horizontal divider
+  ctx.strokeStyle = '#555533'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(22, 190); ctx.lineTo(size - 22, 190); ctx.stroke();
+  // Cream box behind body text for readability
+  ctx.fillStyle = '#e8e4b0'; ctx.fillRect(22, 210, size - 44, 230);
+  // Body text lines
+  ctx.font = 'bold 15px Arial'; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+  ctx.fillStyle = '#111100';
+  const lines = [
+    '\u05D4\u05E0\u05E2\u05E8\u05D9\u05DD \u05E9\u05D7\u05DC \u05E2\u05DC\u05D9\u05D4\u05DD \u05E6\u05D5 \u05D6\u05D4 \u05D9\u05D2\u05D5\u05D9\u05E1\u05D5 \u05DC\u05D0\u05D9\u05DE\u05D5\u05E0\u05D9\u05DD',
+    '\u05D5\u05DC\u05E9\u05D9\u05E8\u05D5\u05EA\u05D9\u05D9 \u05E6\u05D1\u05D0 \u05DC\u05DE\u05E9\u05DA \u05D4\u05EA\u05E7\u05D5\u05E4\u05D4 \u05D4\u05D0\u05DE\u05D5\u05E8\u05D4.',
+    '\u05E2\u05DC \u05DB\u05DC \u05D7\u05D9\u05D9\u05D1\u05D9 \u05D4\u05D2\u05D9\u05D5\u05E1 \u05DC\u05D4\u05EA\u05D9\u05D9\u05E6\u05D1 \u05D1\u05DE\u05E9\u05DA \u05E9\u05D1\u05D5\u05E2',
+    '\u05DE\u05D9\u05D5\u05DD \u05E4\u05E8\u05E1\u05D5\u05DD \u05E6\u05D5 \u05D6\u05D4 \u05D1\u05DC\u05E9\u05DB\u05D5\u05EA \u05D4\u05D2\u05D9\u05D5\u05E1 \u05E9\u05EA\u05D4\u05D9\u05D9\u05E0\u05D4 \u05E4\u05EA\u05D5\u05D7\u05D5\u05EA:',
+    '\u05D1\u05DE\u05E9\u05E8\u05D3\u05D9 \u05DE\u05E8\u05DB\u05D6 \u05D4\u05D2\u05D9\u05D5\u05E1, \u05E8\u05D7\u05D5\u05D1 \u05D1\u05DF \u05D9\u05D4\u05D5\u05D3\u05D4 7',
+  ];
+  lines.forEach((line, i) => {
+    ctx.fillText(line, size - 22, 202 + i * 26);
+  });
+  // Footer
+  ctx.strokeStyle = '#555533'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(22, size - 70); ctx.lineTo(size - 22, size - 70); ctx.stroke();
+  ctx.font = 'bold 16px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#111100';
+  ctx.fillText('\u05D4\u05D5\u05E2\u05D3 \u05D4\u05E4\u05D5\u05E2\u05DC', size/2, size - 40);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function createDraftOrderMesh() {
+  const g = new THREE.Group();
+  const jobTex = createJobApplicationTexture();
+  const face = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.5, 0.65),
+    new THREE.MeshBasicMaterial({map: jobTex, side: THREE.DoubleSide})
+  );
+  g.add(face);
+  g.scale.set(3, 3, 3);
+  return g;
+}
+
+function createGiantRabbi() {
+  const g = new THREE.Group();
+
+  const blackMat  = new THREE.MeshStandardMaterial({color: 0x111111, roughness: 0.7});
+  const whiteMat  = new THREE.MeshStandardMaterial({color: 0xeeeeee, roughness: 0.6});
+  const skinMat   = new THREE.MeshStandardMaterial({color: 0xe8c8a0, roughness: 0.7});
+  const woodMat   = new THREE.MeshStandardMaterial({color: 0xd4a855, roughness: 0.9});
+  const dangerMat = new THREE.MeshStandardMaterial({color: 0xff2200, emissive: 0xff1100, emissiveIntensity: 0.6, roughness: 0.4});
+
+  // Row of 5 haredi figures — raised up so a clear gap exists below the danger bar
+  const positions = [-5.5, -2.8, 0, 2.8, 5.5];
+  positions.forEach(px => {
+    const liftY = 2.2; // figures stand on top of the danger bar — clear gap below
+    const coat = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.52, 3.0, 10), blackMat);
+    coat.position.set(px, 1.5 + liftY, 0);
+    g.add(coat);
+    const shirt = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.35, 0.22), whiteMat);
+    shirt.position.set(px, 2.85 + liftY, 0.38);
+    g.add(shirt);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.38, 10, 10), skinMat);
+    head.position.set(px, 3.55 + liftY, 0);
+    g.add(head);
+    const beard = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.22, 0.65, 8), whiteMat);
+    beard.position.set(px, 3.18 + liftY, 0.18);
+    beard.rotation.x = -0.15;
+    g.add(beard);
+    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.34, 0.5, 10), blackMat);
+    crown.position.set(px, 4.05 + liftY, 0);
+    g.add(crown);
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.07, 14), blackMat);
+    brim.position.set(px, 3.82 + liftY, 0);
+    g.add(brim);
+    for (const side of [-1, 1]) {
+      const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.09, 0.85, 8), blackMat);
+      arm.rotation.z = side * 1.25;
+      arm.position.set(px + side * 0.46, 2.65 + liftY, 0);
+      g.add(arm);
+    }
+  });
+
+  // BRIGHT RED danger bar — impossible to miss, this is what you slide under
+  const dangerBar = new THREE.Mesh(new THREE.BoxGeometry(12.2, 0.32, 0.32), dangerMat);
+  dangerBar.position.set(0, 2.2, 0);
+  g.add(dangerBar);
+  // Red/white striped segments on the danger bar to make it look like a road barrier
+  for (let i = 0; i < 10; i++) {
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.34, 0.34),
+      new THREE.MeshStandardMaterial({color: i % 2 === 0 ? 0xff2200 : 0xffffff, roughness: 0.4}));
+    stripe.position.set(-5.0 + i * 1.1, 2.2, 0);
+    g.add(stripe);
+  }
+
+  // Two vertical poles holding up the bar on the sides
+  for (const px of [-5.8, 5.8]) {
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 2.4, 8), dangerMat);
+    post.position.set(px, 1.2, 0);
+    g.add(post);
+    // Base plate
+    const base = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.12, 0.5),
+      new THREE.MeshStandardMaterial({color: 0x444444, roughness: 0.8}));
+    base.position.set(px, 0.06, 0);
+    g.add(base);
+  }
+
+  // DOWN-ARROW signs on both sides — large yellow signs showing ↓ DUCK ↓
+  const arrowTex = makeCanvasTex('\u2193 DUCK \u2193', 256, 128, '#ffdd00', '#111111', 40);
+  for (const ax of [-7.2, 7.2]) {
+    const arrow = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.8),
+      new THREE.MeshBasicMaterial({map: arrowTex, transparent: true, side: THREE.DoubleSide}));
+    arrow.position.set(ax, 1.6, 0);
+    g.add(arrow);
+  }
+
+  // Banner above: חוסמים את הכביש — clearly above the danger bar
+  const bannerText = '\u05D7\u05D5\u05E1\u05DE\u05D9\u05DD \u05D0\u05EA \u05D4\u05DB\u05D1\u05D9\u05E9';
+  const bannerTex = makeCanvasTex(bannerText, 1024, 160, '#f5f0e0', '#cc0000', 88);
+  const board = new THREE.Mesh(new THREE.BoxGeometry(10.5, 0.85, 0.1), woodMat);
+  board.position.set(0, 3.1, 0);
+  g.add(board);
+  const bannerLabel = new THREE.Mesh(new THREE.PlaneGeometry(10.0, 0.72),
+    new THREE.MeshBasicMaterial({map: bannerTex, transparent: true, side: THREE.DoubleSide}));
+  bannerLabel.position.set(0, 3.1, 0.06);
+  g.add(bannerLabel);
+
+  // Warning "!" above center
+  const warnTex = makeCanvasTex('!', 128, 128, null, '#ff0000', 72);
+  const warn = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9),
+    new THREE.MeshBasicMaterial({map: warnTex, transparent: true, side: THREE.DoubleSide}));
+  warn.position.set(0, 6.2, 0);
+  g.add(warn);
+  g.userData.warn = warn;
+
+  // Store danger bar for blinking animation
+  g.userData.dangerBar = dangerBar;
+
+  return g;
+}
+
+function makeCoinTexture() {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+  const ctx = c.getContext('2d');
+
+  // Bright copper base
+  ctx.beginPath();
+  ctx.arc(128, 128, 126, 0, Math.PI * 2);
+  ctx.fillStyle = '#e8a040';
+  ctx.fill();
+
+  // Raised rim
+  ctx.beginPath();
+  ctx.arc(128, 128, 126, 0, Math.PI * 2);
+  ctx.strokeStyle = '#d08830';
+  ctx.lineWidth = 8;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(128, 128, 118, 0, Math.PI * 2);
+  ctx.strokeStyle = '#f0c070';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Vertical line pattern in center area
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(128, 128, 100, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.strokeStyle = 'rgba(200,130,50,0.25)';
+  ctx.lineWidth = 1.5;
+  for (let x = 30; x < 226; x += 6) {
+    ctx.beginPath();
+    ctx.moveTo(x, 20);
+    ctx.lineTo(x, 236);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // "10" large centered text
+  ctx.fillStyle = '#6B3A00';
+  ctx.font = 'bold 130px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('10', 128, 118);
+
+  // Hebrew text bottom: �??????
+  ctx.fillStyle = '#6B3A00';
+  ctx.font = 'bold 28px Arial';
+  ctx.fillText('�??????', 128, 205);
+
+  // Highlight sheen
+  const sheen = ctx.createRadialGradient(90, 80, 10, 128, 128, 126);
+  sheen.addColorStop(0, 'rgba(255,240,200,0.45)');
+  sheen.addColorStop(0.5, 'rgba(255,230,180,0.15)');
+  sheen.addColorStop(1, 'rgba(255,220,160,0)');
+  ctx.beginPath();
+  ctx.arc(128, 128, 126, 0, Math.PI * 2);
+  ctx.fillStyle = sheen;
+  ctx.fill();
+
+  const t = new THREE.CanvasTexture(c); t.needsUpdate = true; return t;
+}
+const coinTexture = makeCoinTexture();
+function createCoin() {
+  const g = new THREE.Group();
+  const coin = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.1, 32),
+    new THREE.MeshStandardMaterial({color:0xe8a040, emissive:0xe8a040, emissiveIntensity:0.35, metalness:0.6, roughness:0.3}));
+  coin.rotation.z = Math.PI/2; g.add(coin);
+  for (const s of [1, -1]) {
+    const face = new THREE.Mesh(new THREE.CircleGeometry(0.48, 32),
+      new THREE.MeshBasicMaterial({map:coinTexture, transparent:true, side:THREE.DoubleSide}));
+    face.position.x = s * 0.06;
+    face.rotation.y = Math.PI/2 * s;
+    g.add(face);
+  }
+  g.position.y = 1.2;
+  return g;
+}
+
+function makeTicketTexture() {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 128;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.roundRect(4, 4, 248, 120, 8);
+  ctx.fill();
+  ctx.strokeStyle = '#0066cc';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  // Dashed cut line on left
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = '#999';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(50, 8);
+  ctx.lineTo(50, 120);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  // Plane icon (simple triangle + body)
+  ctx.fillStyle = '#0066cc';
+  ctx.font = 'bold 40px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('?', 28, 64);
+  // "FLIGHT" text
+  ctx.fillStyle = '#0055aa';
+  ctx.font = 'bold 30px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('FLIGHT', 148, 38);
+  // "�2 NIS" text
+  ctx.fillStyle = '#cc6600';
+  ctx.font = 'bold 26px Arial';
+  ctx.fillText('�2 NIS', 148, 72);
+  // Barcode lines at bottom
+  ctx.fillStyle = '#333';
+  for (let x = 80; x < 220; x += 4) {
+    const w = Math.random() > 0.5 ? 2 : 1;
+    ctx.fillRect(x, 92, w, 18);
+  }
+  const t = new THREE.CanvasTexture(c); t.needsUpdate = true; return t;
+}
+const ticketTex = makeTicketTexture();
+
+function createPowerup(type) {
+  const g = new THREE.Group();
+  if (type === 'scooter') {
+    const deckMat   = new THREE.MeshStandardMaterial({color:0x1a1a2e, roughness:0.4, metalness:0.5});
+    const frameMat  = new THREE.MeshStandardMaterial({color:0x2a9d8f, roughness:0.3, metalness:0.6,
+                        emissive:0x00ffcc, emissiveIntensity:0.35});
+    const wheelMat  = new THREE.MeshStandardMaterial({color:0x111111, roughness:0.6});
+    const hubMat    = new THREE.MeshStandardMaterial({color:0x2a9d8f, metalness:0.8, roughness:0.2,
+                        emissive:0x00ffcc, emissiveIntensity:0.5});
+    const gripMat   = new THREE.MeshStandardMaterial({color:0x333333, roughness:0.9});
+
+    // Deck
+    const deck = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.1, 0.32), deckMat);
+    deck.position.y = 0.14;
+    g.add(deck);
+
+    // Teal emissive strip on deck
+    const strip = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.025, 0.14), frameMat);
+    strip.position.set(0, 0.195, 0);
+    g.add(strip);
+
+    // Angled stem (tilted forward like a real scooter)
+    const stemPivot = new THREE.Group();
+    stemPivot.position.set(0.38, 0.18, 0);
+    stemPivot.rotation.z = -0.35;
+    g.add(stemPivot);
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 0.72, 10), frameMat);
+    stem.position.y = 0.36;
+    stemPivot.add(stem);
+
+    // Handlebar
+    const hbar = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.7, 8), frameMat);
+    hbar.rotation.z = Math.PI / 2;
+    hbar.position.set(0, 0.76, 0);
+    stemPivot.add(hbar);
+    // Grips
+    for (const s of [-1, 1]) {
+      const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.12, 8), gripMat);
+      grip.rotation.z = Math.PI / 2;
+      grip.position.set(s * 0.31, 0.76, 0);
+      stemPivot.add(grip);
+    }
+
+    // Rear fender
+    const fender = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.06, 0.22), frameMat);
+    fender.position.set(-0.42, 0.22, 0);
+    g.add(fender);
+
+    // Wheels (Torus = visible ring, disc = hub)
+    const wheels = [];
+    for (const [xPos, isFront] of [[0.42, true], [-0.42, false]]) {
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.045, 8, 18), wheelMat);
+      rim.rotation.y = Math.PI / 2;
+      rim.position.set(xPos, 0.18, 0);
+      g.add(rim);
+      wheels.push(rim);
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.07, 8), hubMat);
+      hub.rotation.z = Math.PI / 2;
+      hub.position.set(xPos, 0.18, 0);
+      g.add(hub);
+      // Spokes
+      for (let a = 0; a < 4; a++) {
+        const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.025, 0.025), hubMat);
+        spoke.rotation.y = Math.PI / 2;
+        spoke.rotation.z = (Math.PI / 4) * a;
+        spoke.position.set(xPos, 0.18, 0);
+        g.add(spoke);
+      }
+    }
+    g.userData.wheels = wheels;
+
+    g.scale.setScalar(2.2);
+    g.position.y = 1.6;
+  } else if (type === 'ticket') {
+    const ticketGeo = new THREE.PlaneGeometry(1.6, 0.8);
+    const ticketMat = new THREE.MeshBasicMaterial({map: ticketTex, transparent: true, side: THREE.DoubleSide});
+    const ticket = new THREE.Mesh(ticketGeo, ticketMat);
+    g.add(ticket);
+    const glowGeo = new THREE.PlaneGeometry(1.8, 1.0);
+    const glowMat = new THREE.MeshBasicMaterial({color: 0xffcc00, transparent: true, opacity: 0.25, side: THREE.DoubleSide});
+    const glow = new THREE.Mesh(glowGeo, glowMat);
+    glow.position.z = -0.01;
+    g.add(glow);
+    g.position.y = 1.8;
+  } else if (type === 'trumpCoin') {
+    const trumpTex = createTrumpCoinTexture();
+    const R = 1.4;
+    const ringMat = new THREE.MeshStandardMaterial({color:0xff6600, emissive:0xff4400, emissiveIntensity:0.9, transparent:true, opacity:0.85});
+    // Front face
+    const front = new THREE.Mesh(new THREE.CircleGeometry(R, 48),
+      new THREE.MeshBasicMaterial({map:trumpTex, side:THREE.FrontSide}));
+    front.position.z = 0.01;
+    g.add(front);
+    // Back face
+    const back = new THREE.Mesh(new THREE.CircleGeometry(R, 48),
+      new THREE.MeshBasicMaterial({map:trumpTex, side:THREE.FrontSide}));
+    back.rotation.y = Math.PI;
+    back.position.z = -0.01;
+    g.add(back);
+    // Gold emissive ring
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(R + 0.06, 0.08, 8, 48), ringMat);
+    g.add(ring);
+    g.position.y = 1.9;
+  } else {
+    const color = 0x22c55e;
+    const mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(0.5, 1),
+      new THREE.MeshStandardMaterial({color, emissive:color, emissiveIntensity:0.4, metalness:0.3, roughness:0.5}));
+    g.add(mesh); g.position.y = 1.5;
+  }
+  return g;
+}
+
+// �?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?
+// MIRI CHARACTER
+// �?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?
+const texLoader = new THREE.TextureLoader();
+function createAvatarHeadTexture() {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+  const ctx = c.getContext('2d');
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+
+  function drawFallback() {
+    ctx.fillStyle = '#E8B89D';
+    ctx.beginPath();
+    ctx.arc(128, 128, 124, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 32px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Miri', 128, 128);
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, 256, 256);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(128, 128, 124, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.clip();
+    if (img.naturalWidth && img.naturalHeight) {
+      const iw = img.naturalWidth, ih = img.naturalHeight;
+      const faceScale = 1.6;
+      const sw = iw / faceScale, sh = ih / faceScale;
+      const sx = (iw - sw) / 2, sy = (ih - sh) * 0.2;
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 256, 256);
+    } else {
+      drawFallback();
+    }
+    ctx.restore();
+    ctx.strokeStyle = '#FFD700';
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.arc(128, 128, 121, 0, Math.PI * 2);
+    ctx.stroke();
+    tex.needsUpdate = true;
+  }
+
+  draw();
+  img.onload = draw;
+  img.onerror = draw;
+  img.src = 'miri.png';
+  return tex;
+}
+
+function createInspectorHeadTexture() {
+  const size = 512;
+  const c = document.createElement('canvas'); c.width = size; c.height = size;
+  const ctx = c.getContext('2d');
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const cx = size / 2, r = size / 2 - 4;
+  function drawFallback() {
+    ctx.fillStyle = '#e8d4c4';
+    ctx.beginPath();
+    ctx.arc(cx, cx, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#555';
+    ctx.font = 'bold 56px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Inspector', cx, cx);
+  }
+  function draw() {
+    ctx.clearRect(0, 0, size, size);
+    // Always draw a solid background so the face is never invisible
+    ctx.fillStyle = '#e8d4c4';
+    ctx.beginPath();
+    ctx.arc(cx, cx, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cx, r, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.clip();
+    if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
+      const iw = img.naturalWidth, ih = img.naturalHeight;
+      const faceScale = 1.4;
+      const sw = iw / faceScale, sh = ih / faceScale;
+      const sx = (iw - sw) / 2, sy = (ih - sh) * 0.15;
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, size, size);
+    } else {
+      drawFallback();
+    }
+    ctx.restore();
+    ctx.strokeStyle = '#cc2222';
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.arc(cx, cx, r - 4, 0, Math.PI * 2);
+    ctx.stroke();
+    tex.needsUpdate = true;
+  }
+  img.onload = draw;
+  img.onerror = draw;
+  img.src = 'inspector.png';
+  draw();
+  return tex;
+}
+
+function createLapidHeadTexture() {
+  const size = 512;
+  const c = document.createElement('canvas'); c.width = size; c.height = size;
+  const ctx = c.getContext('2d');
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const cx = size / 2, r = size / 2 - 4;
+  function drawFallback() {
+    ctx.fillStyle = '#e8d0b0';
+    ctx.beginPath(); ctx.arc(cx, cx, r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 56px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('Lapid', cx, cx);
+  }
+  function draw() {
+    ctx.clearRect(0, 0, size, size);
+    ctx.fillStyle = '#e8d0b0';
+    ctx.beginPath(); ctx.arc(cx, cx, r, 0, Math.PI * 2); ctx.fill();
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cx, r, 0, Math.PI * 2); ctx.closePath(); ctx.clip();
+    if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
+      const iw = img.naturalWidth, ih = img.naturalHeight;
+      const tmp = document.createElement('canvas');
+      tmp.width = size; tmp.height = size;
+      const tc = tmp.getContext('2d');
+      tc.drawImage(img, 0, 0, iw, ih, 0, 0, size, size);
+      const bgSample = tc.getImageData(4, 4, 1, 1).data;
+      const [br, bg, bb] = [bgSample[0], bgSample[1], bgSample[2]];
+      const imgData = tc.getImageData(0, 0, size, size);
+      const d = imgData.data;
+      const threshold = 55;
+      for (let i = 0; i < d.length; i += 4) {
+        const dr = d[i] - br, dg = d[i+1] - bg, db = d[i+2] - bb;
+        if (Math.sqrt(dr*dr + dg*dg + db*db) < threshold) d[i+3] = 0;
+      }
+      tc.putImageData(imgData, 0, 0);
+      ctx.drawImage(tmp, 0, 0);
+    } else { drawFallback(); }
+    ctx.restore();
+    ctx.strokeStyle = '#2255cc';
+    ctx.lineWidth = 8;
+    ctx.beginPath(); ctx.arc(cx, cx, r - 4, 0, Math.PI * 2); ctx.stroke();
+    tex.needsUpdate = true;
+  }
+  img.onload = draw; img.onerror = draw;
+  img.src = 'lapid.png';
+  draw();
+  return tex;
+}
+
+function createTrumpCoinTexture() {
+  const size = 512;
+  const c = document.createElement('canvas'); c.width = size; c.height = size;
+  const ctx = c.getContext('2d');
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  function drawFallback() {
+    ctx.fillStyle = '#f5e8d0';
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = '#cc7700';
+    ctx.font = 'bold 120px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('TRUMP', size/2, size/2);
+  }
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  function draw() {
+    const cx = size / 2, r = size / 2 - 6;
+    ctx.clearRect(0, 0, size, size);
+    // Circular clip
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cx, r, 0, Math.PI * 2); ctx.closePath(); ctx.clip();
+    if (img.complete && img.naturalWidth > 0) {
+      const iw = img.naturalWidth, ih = img.naturalHeight;
+      ctx.drawImage(img, 0, 0, iw, ih, 0, 0, size, size);
+    } else { drawFallback(); }
+    ctx.restore();
+    // Orange border ring
+    ctx.strokeStyle = '#ff6600';
+    ctx.lineWidth = 16;
+    ctx.beginPath(); ctx.arc(cx, cx, r - 8, 0, Math.PI * 2); ctx.stroke();
+    // Inner thin ring
+    ctx.strokeStyle = '#ff4400';
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(cx, cx, r - 20, 0, Math.PI * 2); ctx.stroke();
+    tex.needsUpdate = true;
+  }
+  img.onload = draw; img.onerror = drawFallback;
+  img.src = 'trump.png';
+  draw();
+  return tex;
+}
+
+function createChaserInspector() {
+  const g = new THREE.Group();
+  const skinMat = new THREE.MeshStandardMaterial({color:0xe8c8a0, roughness:0.7});
+  const shirtMat = new THREE.MeshStandardMaterial({color:0x1a3a6a, roughness:0.6});
+  const pantsMat = new THREE.MeshStandardMaterial({color:0x1a1a2e, roughness:0.7});
+  const shoeMat = new THREE.MeshStandardMaterial({color:0x111111, roughness:0.8});
+  const badgeMat = new THREE.MeshStandardMaterial({color:0xFFD700, metalness:0.6, roughness:0.3});
+
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.6, 1.6, 10), shirtMat);
+  torso.position.set(0, 2.2, 0);
+  torso.rotation.x = 0.15;
+  g.add(torso);
+
+  const badge = new THREE.Mesh(new THREE.CircleGeometry(0.15, 16), badgeMat);
+  badge.position.set(0.25, 2.6, 0.52);
+  g.add(badge);
+
+  const headTex = createLapidHeadTexture();
+  const head = new THREE.Mesh(new THREE.CircleGeometry(1.0, 32),
+    new THREE.MeshBasicMaterial({map: headTex, transparent: true, side: THREE.DoubleSide}));
+  head.position.set(0, 3.8, 0);
+  g.add(head);
+  g.userData.head = head;
+
+  const capMat = new THREE.MeshStandardMaterial({color:0x1a2a4a, roughness:0.5});
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.58, 0.3, 12), capMat);
+  cap.position.set(0, 4.95, 0);
+  g.add(cap);
+  const visor = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.06, 0.4), capMat);
+  visor.position.set(0, 4.82, 0.35);
+  g.add(visor);
+
+  const armMat = shirtMat;
+  const arms = [];
+  for (const side of [-1, 1]) {
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.9, 8), armMat);
+    arm.position.set(side * 0.6, 2.1, 0.15);
+    g.add(arm);
+    arms.push(arm);
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 10), skinMat);
+    hand.position.set(side * 0.6, 1.55, 0.25);
+    g.add(hand);
+  }
+  g.userData.arms = arms;
+
+  const legs = [];
+  for (const side of [-1, 1]) {
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 1.0, 8), pantsMat);
+    leg.position.set(side * 0.22, 0.7, 0);
+    g.add(leg);
+    legs.push(leg);
+    const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.12, 0.38), shoeMat);
+    shoe.position.set(side * 0.22, 0.12, 0.1);
+    g.add(shoe);
+  }
+  g.userData.legs = legs;
+
+  g.userData.warn = null;
+
+  const sirenGroup = new THREE.Group();
+  const sirenRed = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8),
+    new THREE.MeshStandardMaterial({color:0xff0000, emissive:0xff0000, emissiveIntensity:0.8, transparent:true}));
+  sirenRed.position.set(-0.3, 5.0, 0);
+  sirenGroup.add(sirenRed);
+  const sirenBlue = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8),
+    new THREE.MeshStandardMaterial({color:0x0044ff, emissive:0x0044ff, emissiveIntensity:0.8, transparent:true}));
+  sirenBlue.position.set(0.3, 5.0, 0);
+  sirenGroup.add(sirenBlue);
+  g.add(sirenGroup);
+  g.userData.sirenRed = sirenRed;
+  g.userData.sirenBlue = sirenBlue;
+
+  g.scale.setScalar(0.7);
+  return g;
+}
+
+function updateChaserInspector(g, frame, chaserGap) {
+  if (!g.userData.head) return;
+
+  // Fade out as the inspector falls behind: visible 0–10, fades 10–22, gone > 22
+  const fadeStart = 10, fadeEnd = 22;
+  const opacity = chaserGap !== undefined
+    ? Math.max(0, Math.min(1, 1 - (chaserGap - fadeStart) / (fadeEnd - fadeStart)))
+    : 1;
+  g.visible = opacity > 0;
+  if (!g.visible) return;
+
+  g.traverse(child => {
+    if (child.isMesh && child.material) {
+      child.material.transparent = true;
+      child.material.opacity = opacity;
+    }
+  });
+
+  g.userData.head.lookAt(camera.position);
+  if (g.userData.warn) {
+    g.userData.warn.lookAt(camera.position);
+    g.userData.warn.position.y = 5.4 + Math.sin(frame * 0.12) * 0.2;
+    g.userData.warn.material.opacity = opacity;
+  }
+  const runPhase = frame * 0.28;
+  if (g.userData.arms) {
+    g.userData.arms[0].rotation.x = Math.sin(runPhase) * 0.8;
+    g.userData.arms[1].rotation.x = -Math.sin(runPhase) * 0.8;
+  }
+  if (g.userData.legs) {
+    g.userData.legs[0].rotation.x = -Math.sin(runPhase) * 0.7;
+    g.userData.legs[1].rotation.x = Math.sin(runPhase) * 0.7;
+  }
+  if (g.userData.sirenRed && g.userData.sirenBlue) {
+    const blink = Math.floor(frame * 0.15) % 2 === 0;
+    g.userData.sirenRed.material.emissiveIntensity = blink ? 1.2 * opacity : 0.1;
+    g.userData.sirenBlue.material.emissiveIntensity = blink ? 0.1 : 1.2 * opacity;
+  }
+}
+
+function createMiriCharacter() {
+  const g = new THREE.Group();
+  g.userData = {};
+
+  // Head � circular avatar face (slightly larger for cartoon proportion)
+  const headTex = createAvatarHeadTexture();
+  const head = new THREE.Mesh(new THREE.CircleGeometry(0.68, 32),
+    new THREE.MeshBasicMaterial({map:headTex, transparent:true, side:THREE.DoubleSide}));
+  head.position.y = 3.35;
+  g.add(head);
+  g.userData.head = head;
+
+  // Torso � compact for runner build
+  const torsoMat = new THREE.MeshStandardMaterial({color:0x1a1a1a, roughness:0.7});
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.48, 1.35, 12), torsoMat);
+  torso.position.y = 2.0; g.add(torso);
+  g.userData.torso = torso;
+
+  // Backpack (on back, runner style)
+  const packMat = new THREE.MeshStandardMaterial({color:0x88aacc, roughness:0.6});
+  const pack = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.25), packMat);
+  pack.position.set(0, 2.0, -0.42);
+  g.add(pack);
+  const packFront = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.4, 0.08), new THREE.MeshStandardMaterial({color:0x6699bb}));
+  packFront.position.set(0, 2.05, -0.54);
+  g.add(packFront);
+  g.userData.backpack = [pack, packFront];
+
+  // White collar
+  const collarMat = new THREE.MeshStandardMaterial({color:0xffffff, roughness:0.5});
+  const collar = new THREE.Mesh(new THREE.TorusGeometry(0.38, 0.05, 8, 16, Math.PI), collarMat);
+  collar.rotation.x = Math.PI / 2;
+  collar.rotation.z = Math.PI;
+  collar.position.y = 2.65;
+  g.add(collar);
+
+  // Gold necklace
+  const necklaceMat = new THREE.MeshStandardMaterial({color:0x2a2a2a, emissive:0x111111, emissiveIntensity:0.1, metalness:0.3});
+  const necklace = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.022, 8, 24, Math.PI*1.2), necklaceMat);
+  necklace.rotation.x = Math.PI / 2;
+  necklace.rotation.z = Math.PI * 0.9;
+  necklace.position.y = 2.5; necklace.position.z = 0.08;
+  g.add(necklace);
+
+  // Arms � hierarchy: shoulder -> upperArm -> forearm -> hand (running physics)
+  const armMat = new THREE.MeshStandardMaterial({color:0x1a1a1a, roughness:0.7});
+  const handMat = new THREE.MeshStandardMaterial({color:0xE8B89D, roughness:0.7});
+  const upperArms = [], forearms = [], hands = [];
+  const UPPER_LEN = 0.48, FORE_LEN = 0.42;
+  for (const side of [-1, 1]) {
+    const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.1, UPPER_LEN, 8), armMat);
+    upper.position.set(side * 0.52, 2.02, 0);
+    upper.rotation.z = side * 0.12;
+    g.add(upper); upperArms.push(upper);
+    const fore = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, FORE_LEN, 8), armMat);
+    fore.position.set(0, -UPPER_LEN / 2, 0);
+    upper.add(fore); forearms.push(fore);
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8), handMat);
+    hand.position.set(0, -FORE_LEN / 2, 0);
+    fore.add(hand); hands.push(hand);
+  }
+  g.userData.upperArms = upperArms;
+  g.userData.forearms = forearms;
+  g.userData.hands = hands;
+
+  // Legs � hierarchy: hip -> thigh -> calf -> shoe (running physics)
+  const legMat = new THREE.MeshStandardMaterial({color:0x1a1a1a, roughness:0.7});
+  const shoeMat = new THREE.MeshStandardMaterial({color:0x252525, roughness:0.6});
+  const thighs = [], calves = [], shoes = [];
+  const THIGH_LEN = 0.48, CALF_LEN = 0.42;
+  for (const side of [-1, 1]) {
+    const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.12, THIGH_LEN, 8), legMat);
+    thigh.position.set(side * 0.18, 0.82, 0);
+    g.add(thigh); thighs.push(thigh);
+    const calf = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.1, CALF_LEN, 8), legMat);
+    calf.position.set(0, -THIGH_LEN / 2, 0);
+    thigh.add(calf); calves.push(calf);
+    const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.08, 0.28), shoeMat);
+    shoe.position.set(0, -CALF_LEN / 2, 0.06);
+    calf.add(shoe); shoes.push(shoe);
+  }
+  g.userData.thighs = thighs;
+  g.userData.calves = calves;
+  g.userData.shoes = shoes;
+
+  // Rideable scooter (visible when flying with scooter powerup)
+  const rideScooter = createRideableScooter();
+  rideScooter.visible = false;
+  rideScooter.scale.setScalar(2.2);
+  rideScooter.position.set(0, -0.02, -0.35);
+  g.add(rideScooter);
+  g.userData.scooterRide = rideScooter;
+
+  // Shadow ring
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.04, 8, 24),
+    new THREE.MeshBasicMaterial({color:0x4488ff, transparent:true, opacity:0.3}));
+  ring.rotation.x = Math.PI/2; ring.position.y = 0.02; g.add(ring);
+  g.userData.ring = ring;
+
+  return g;
+}
+
+function createRideableScooter() {
+  const g = new THREE.Group();
+  const deckMat = new THREE.MeshStandardMaterial({color: 0x2a2a2a, roughness: 0.5});
+  const wheelMat = new THREE.MeshStandardMaterial({color: 0x1a1a1a});
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.08, 0.32), deckMat);
+  g.add(deck);
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.04, 0.55, 8), deckMat);
+  stem.rotation.x = Math.PI / 2;
+  stem.position.set(0, 0.35, 0.08);
+  g.add(stem);
+  const handlebar = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.35, 8), deckMat);
+  handlebar.rotation.z = Math.PI / 2;
+  handlebar.position.set(0, 0.58, 0.08);
+  g.add(handlebar);
+  for (const side of [-1, 1]) {
+    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.05, 12), wheelMat);
+    wheel.rotation.x = Math.PI / 2;
+    wheel.position.set(side * 0.28, -0.02, 0);
+    g.add(wheel);
+  }
+  return g;
+}
+
+function updateMiri(g, frame, jumping, crouching, jumpY, ridingScooter) {
+  if (!g.userData.head) return;
+
+  g.userData.head.lookAt(camera.position);
+
+  const yOff = jumpY;
+  const runPhase = frame * 0.32;
+  const bob = crouching && !ridingScooter ? 0 : (ridingScooter ? 0 : Math.sin(runPhase * 2) * 0.04);
+
+  if (ridingScooter) {
+    const baseY = 2.0 + yOff;
+    const headY = 3.35 + yOff;
+    g.userData.head.position.y = headY;
+    g.userData.head.scale.set(1, 1, 1);
+    g.userData.torso.position.y = baseY;
+    g.userData.torso.rotation.x = 0.06;
+    g.userData.torso.scale.set(1, 1, 1);
+    if (g.userData.backpack) g.userData.backpack.forEach(m => { m.position.y = baseY; m.visible = true; });
+    g.userData.upperArms[0].position.set(-0.18, 2.02 + yOff, 0.48);
+    g.userData.upperArms[1].position.set(0.18, 2.02 + yOff, 0.48);
+    g.userData.upperArms[0].rotation.x = 0.62;
+    g.userData.upperArms[0].rotation.z = -0.06;
+    g.userData.forearms[0].rotation.x = 0.5;
+    g.userData.upperArms[1].rotation.x = 0.62;
+    g.userData.upperArms[1].rotation.z = 0.06;
+    g.userData.forearms[1].rotation.x = 0.5;
+    g.userData.thighs[0].position.y = 0.82 + yOff;
+    g.userData.thighs[1].position.y = 0.82 + yOff;
+    g.userData.thighs[0].rotation.x = 0.15;
+    g.userData.calves[0].rotation.x = 0.25;
+    g.userData.thighs[1].rotation.x = 0.15;
+    g.userData.calves[1].rotation.x = 0.25;
+    g.userData.thighs.forEach(t => t.visible = true);
+  } else if (crouching) {
+    g.userData.head.position.y = 1.75 + yOff;
+    g.userData.head.scale.set(1.2, 0.7, 1);
+    g.userData.torso.position.y = 1.0 + yOff;
+    g.userData.torso.rotation.x = 0;
+    g.userData.torso.scale.set(1.3, 0.5, 1.3);
+    if (g.userData.backpack) g.userData.backpack.forEach(m => { m.position.y = 1.0 + yOff; m.visible = true; });
+    [0, 1].forEach(i => {
+      const s = i === 0 ? -1 : 1;
+      g.userData.upperArms[i].position.set(s * 0.52, 0.92 + yOff, 0);
+      g.userData.upperArms[i].rotation.x = 0.5;
+      g.userData.upperArms[i].rotation.z = s * 0.55;
+      g.userData.forearms[i].rotation.x = 0.7;
+      g.userData.upperArms[i].visible = true;
+    });
+    g.userData.thighs.forEach(t => { t.visible = false; });
+  } else {
+    const baseY = 2.0 + yOff + bob;
+    const headY = 3.35 + yOff + bob;
+    const armRootY = 2.02 + yOff + bob;
+    const legRootY = 0.82 + yOff;
+
+    g.userData.head.position.y = headY;
+    g.userData.head.scale.set(1, 1, 1);
+    g.userData.torso.position.y = baseY;
+    g.userData.torso.rotation.x = 0.08;
+    g.userData.torso.scale.set(1, 1, 1);
+    if (g.userData.backpack) g.userData.backpack.forEach(m => { m.position.y = baseY; m.visible = true; });
+
+    g.userData.upperArms[0].position.set(-0.52, armRootY, 0);
+    g.userData.upperArms[1].position.set(0.52, armRootY, 0);
+    g.userData.thighs[0].position.set(-0.18, legRootY, 0);
+    g.userData.thighs[1].position.set(0.18, legRootY, 0);
+
+    // Running physics: arm/leg opposition (left leg forward = right arm forward)
+    const leftArmSwing = Math.sin(runPhase) * 0.85;
+    const rightArmSwing = Math.sin(runPhase + Math.PI) * 0.85;
+    const leftLegSwing = Math.sin(runPhase + Math.PI) * 0.7;
+    const rightLegSwing = Math.sin(runPhase) * 0.7;
+
+    g.userData.upperArms[0].rotation.x = leftArmSwing;
+    g.userData.forearms[0].rotation.x = 0.25 + leftArmSwing * 0.6;
+    g.userData.upperArms[1].rotation.x = rightArmSwing;
+    g.userData.forearms[1].rotation.x = 0.25 + rightArmSwing * 0.6;
+
+    g.userData.thighs[0].rotation.x = leftLegSwing;
+    g.userData.calves[0].rotation.x = 0.4 + leftLegSwing * 0.8;
+    g.userData.thighs[1].rotation.x = rightLegSwing;
+    g.userData.calves[1].rotation.x = 0.4 + rightLegSwing * 0.8;
+
+    g.userData.upperArms[0].rotation.z = -0.12;
+    g.userData.upperArms[1].rotation.z = 0.12;
+    g.userData.thighs.forEach(t => t.visible = true);
+  }
+
+  g.userData.ring.material.opacity = 0.25 + Math.sin(frame * 0.1) * 0.1;
+  g.userData.ring.position.y = 0.02 + yOff * 0.1;
+}
+
+// �?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?
+// SOUND ENGINE
+let _audioCtx = null;
+function _ac() {
+  if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (_audioCtx.state === 'suspended') _audioCtx.resume();
+  return _audioCtx;
+}
+function playSound(type) {
+  try {
+    const ac = _ac();
+    const now = ac.currentTime;
+    const g = ac.createGain();
+    g.connect(ac.destination);
+    if (type === 'coin') {
+      const o = ac.createOscillator(); o.type = 'sine';
+      o.frequency.setValueAtTime(880, now);
+      o.frequency.exponentialRampToValueAtTime(1400, now + 0.08);
+      g.gain.setValueAtTime(0.07, now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+      o.connect(g); o.start(now); o.stop(now + 0.14);
+    } else if (type === 'jump') {
+      const o = ac.createOscillator(); o.type = 'sine';
+      o.frequency.setValueAtTime(300, now);
+      o.frequency.exponentialRampToValueAtTime(600, now + 0.12);
+      g.gain.setValueAtTime(0.06, now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+      o.connect(g); o.start(now); o.stop(now + 0.18);
+    } else if (type === 'slide') {
+      const o = ac.createOscillator(); o.type = 'sawtooth';
+      o.frequency.setValueAtTime(400, now);
+      o.frequency.exponentialRampToValueAtTime(180, now + 0.14);
+      g.gain.setValueAtTime(0.04, now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+      o.connect(g); o.start(now); o.stop(now + 0.16);
+    } else if (type === 'stumble') {
+      const o = ac.createOscillator(); o.type = 'square';
+      o.frequency.setValueAtTime(220, now);
+      o.frequency.exponentialRampToValueAtTime(80, now + 0.22);
+      g.gain.setValueAtTime(0.09, now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+      o.connect(g); o.start(now); o.stop(now + 0.28);
+    } else if (type === 'gameover') {
+      const freqs = [440, 370, 310, 220];
+      freqs.forEach((f, i) => {
+        const o = ac.createOscillator(); o.type = 'sawtooth';
+        const gg = ac.createGain();
+        gg.connect(ac.destination);
+        const t = now + i * 0.18;
+        o.frequency.setValueAtTime(f, t);
+        gg.gain.setValueAtTime(0.08, t); gg.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+        o.connect(gg); o.start(t); o.stop(t + 0.18);
+      });
+    } else if (type === 'powerup') {
+      const freqs = [523, 659, 784, 1047];
+      freqs.forEach((f, i) => {
+        const o = ac.createOscillator(); o.type = 'sine';
+        const gg = ac.createGain();
+        gg.connect(ac.destination);
+        const t = now + i * 0.09;
+        o.frequency.setValueAtTime(f, t);
+        gg.gain.setValueAtTime(0.06, t); gg.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+        o.connect(gg); o.start(t); o.stop(t + 0.12);
+      });
+    } else if (type === 'warn') {
+      const o = ac.createOscillator(); o.type = 'square';
+      o.frequency.setValueAtTime(600, now);
+      o.frequency.setValueAtTime(800, now + 0.1);
+      o.frequency.setValueAtTime(600, now + 0.2);
+      g.gain.setValueAtTime(0.04, now); g.gain.setValueAtTime(0.04, now + 0.25); g.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      o.connect(g); o.start(now); o.stop(now + 0.3);
+    } else if (type === 'scooter') {
+      const o = ac.createOscillator(); o.type = 'sawtooth';
+      o.frequency.setValueAtTime(120, now);
+      o.frequency.exponentialRampToValueAtTime(240, now + 0.3);
+      g.gain.setValueAtTime(0.05, now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      o.connect(g); o.start(now); o.stop(now + 0.35);
+    }
+  } catch(e) {}
+}
+
+// BACKGROUND MUSIC
+let _bgMusicNodes = [];
+let _bgMusicGain = null;
+let _bgMusicPlaying = false;
+
+function startBgMusic() {
+  try {
+    stopBgMusic();
+    const ac = _ac();
+    _bgMusicGain = ac.createGain();
+    _bgMusicGain.gain.setValueAtTime(0.001, ac.currentTime);
+    _bgMusicGain.gain.linearRampToValueAtTime(0.07, ac.currentTime + 1.5);
+    _bgMusicGain.connect(ac.destination);
+
+    // Mediterranean-flavored upbeat melody (D minor scale with raised 6th)
+    // Notes as [frequency, duration] pairs, loop ~4 seconds
+    const melody = [
+      [293.7,0.18],[329.6,0.18],[349.2,0.18],[392.0,0.18],
+      [440.0,0.18],[466.2,0.18],[523.3,0.18],[493.9,0.36],
+      [440.0,0.18],[392.0,0.18],[349.2,0.18],[329.6,0.18],
+      [293.7,0.36],[246.9,0.18],[261.6,0.18],[293.7,0.36],
+    ];
+    // Bass line: simple two-note pulse
+    const bass = [
+      [146.8,0.36],[110.0,0.36],[130.8,0.36],[98.0,0.36],
+      [146.8,0.36],[110.0,0.36],[130.8,0.36],[98.0,0.36],
+    ];
+
+    const loopDuration = melody.reduce((s,[,d])=>s+d,0);
+
+    function scheduleLoop(startTime) {
+      let t = startTime;
+      melody.forEach(([freq, dur]) => {
+        const o = ac.createOscillator(); o.type = 'triangle';
+        const ng = ac.createGain();
+        ng.connect(_bgMusicGain);
+        o.frequency.setValueAtTime(freq, t);
+        ng.gain.setValueAtTime(0.55, t);
+        ng.gain.setValueAtTime(0.55, t + dur * 0.7);
+        ng.gain.linearRampToValueAtTime(0.001, t + dur * 0.95);
+        o.connect(ng); o.start(t); o.stop(t + dur);
+        _bgMusicNodes.push(o);
+        t += dur;
+      });
+      let bt = startTime;
+      bass.forEach(([freq, dur]) => {
+        const o = ac.createOscillator(); o.type = 'sine';
+        const ng = ac.createGain();
+        ng.connect(_bgMusicGain);
+        o.frequency.setValueAtTime(freq, bt);
+        ng.gain.setValueAtTime(0.3, bt);
+        ng.gain.linearRampToValueAtTime(0.001, bt + dur * 0.9);
+        o.connect(ng); o.start(bt); o.stop(bt + dur);
+        _bgMusicNodes.push(o);
+        bt += dur;
+      });
+      return startTime + loopDuration;
+    }
+
+    _bgMusicPlaying = true;
+    let next = ac.currentTime;
+    // Pre-schedule 3 loops ahead and re-schedule using setInterval
+    for (let i = 0; i < 3; i++) next = scheduleLoop(next);
+    const lookahead = loopDuration * 1000;
+    const iv = setInterval(() => {
+      if (!_bgMusicPlaying) { clearInterval(iv); return; }
+      next = scheduleLoop(next);
+    }, lookahead);
+    _bgMusicNodes._interval = iv;
+  } catch(e) {}
+}
+
+function stopBgMusic() {
+  try {
+    _bgMusicPlaying = false;
+    if (_bgMusicNodes._interval) clearInterval(_bgMusicNodes._interval);
+    if (_bgMusicGain) {
+      const ac = _ac();
+      _bgMusicGain.gain.linearRampToValueAtTime(0.001, ac.currentTime + 0.5);
+      setTimeout(() => {
+        _bgMusicNodes.forEach(o => { try { o.stop(); } catch(e){} });
+        _bgMusicNodes = [];
+        _bgMusicGain = null;
+      }, 600);
+    }
+  } catch(e) {}
+}
+
+// GAME STATE & LOGIC
+const GRAVITY = 0.028, JUMP_FORCE = 0.50, CROUCH_DUR = 30, SPAWN_Z = -80;
+const BASE_BUS_PRICE = 5.50;
+const BULLET_SPEED = 0.38;
+const TIERS = [
+  {dist:    0, name: null,           speedCap: 0.50, spawnMin:  95, spawnScale: 120, pairThresh: 0.88},
+  {dist: 5000, name: 'RUSH HOUR',    speedCap: 0.58, spawnMin:  88, spawnScale: 128, pairThresh: 0.86},
+  {dist:15000, name: 'CHAOS',        speedCap: 0.65, spawnMin:  80, spawnScale: 136, pairThresh: 0.80},
+  {dist:30000, name: 'TOTAL CHAOS',  speedCap: 0.75, spawnMin:  70, spawnScale: 145, pairThresh: 0.74},
+];
+const gs = {
+  state:'menu', speed:0.15, frame:0, nis:0, totalNis:0, distance:0, tier:0, dailyMode:false, _rng:null,
+  busPrice:BASE_BUS_PRICE, multiplier:1, multTimer:0, magnetTimer:0, scooterTimer:0, trumpTimer:0, giyusFreezeTimer:0,
+  playerLane:1, playerX:0, targetX:0,
+  jumping:false, jumpVel:0, jumpY:0,
+  crouching:false, crouchTimer:0,
+  obstacles:[], coins:[], powerups:[], bullets:[], taxLetters:[],
+  taxmanNearby:false, taxmanX:0,
+  spawnT:0, coinT:0, puT:0, playerZ:0,
+  chaserGap:6, chaserX:0, chaserTargetLane:1,
+  stumbling:false, stumbleTimer:0,
+  warnSounded:false,
+  testTaxmanSpawned:false,
+};
+
+function resetGame() {
+  gs.obstacles.forEach(o => scene.remove(o.mesh));
+  gs.coins.forEach(c => scene.remove(c.mesh));
+  gs.powerups.forEach(p => scene.remove(p.mesh));
+  gs.bullets.forEach(b => scene.remove(b.mesh));
+  gs.taxLetters.forEach(t => scene.remove(t.mesh));
+  Object.assign(gs, {
+    state:'menu', speed:0.15, frame:0, nis:0, totalNis:0, distance:0, tier:0, dailyMode:gs.dailyMode, _rng:gs._rng,
+    busPrice:BASE_BUS_PRICE, multiplier:1, multTimer:0, magnetTimer:0, scooterTimer:0, trumpTimer:0, giyusFreezeTimer:0,
+    playerLane:1, playerX:0, targetX:0,
+    jumping:false, jumpVel:0, jumpY:0,
+    crouching:false, crouchTimer:0,
+    obstacles:[], coins:[], powerups:[], bullets:[], taxLetters:[],
+    taxmanNearby:false, taxmanX:0,
+    spawnT:0, coinT:0, puT:0, playerZ:0,
+    chaserGap:6, chaserX:0, chaserTargetLane:1,
+    stumbling:false, stumbleTimer:0,
+    warnSounded:false,
+    testTaxmanSpawned:false,
+  });
+
+  // Reset road segments back to origin
+  for (let i = 0; i < roadSegs.length; i++) {
+    roadSegs[i].position.z = -i * SEGMENT_LENGTH;
+  }
+
+  // Reset buildings back to starting positions
+  let bIdx = 0;
+  for (const b of buildings) {
+    const origZ = -Math.floor(bIdx / 2) * 22 - Math.random() * 8;
+    b.position.z = origZ;
+    bIdx++;
+  }
+
+  // Reset clouds
+  for (const c of clouds) {
+    c.position.z = -40 - Math.random() * 100;
+    c.position.x = (Math.random() - 0.5) * 150;
+  }
+
+  // Reset crowds
+  for (let i = 0; i < crowds.length; i++) {
+    crowds[i].position.z = -Math.floor(i/2) * 30 - Math.random() * 10;
+  }
+
+  // Snap camera and ground back to start
+  camera.position.set(0, 8.5, 14);
+  camera.lookAt(0, 1, -28);
+  camTarget.set(0, 8.5, 14);
+  groundPlane.position.z = 0;
+  sun.position.z = -60;
+  sunGlow.position.z = -60;
+  sunGlow2.position.z = -60;
+
+  // Place character on the middle lane
+  miri.position.set(0, 0, 0);
+
+  // Reset chaser inspector close behind the player for dramatic start
+  chaserInspector.position.set(0, 0, 6);
+  chaserInspector.visible = true;
+}
+
+function handleKey(key) {
+  if (gs.state !== 'playing') return;
+  const k = key.toLowerCase();
+  if (k==='arrowleft'||k==='a') { gs.playerLane = Math.max(0, gs.playerLane-1); gs.targetX = LANE_X[gs.playerLane]; }
+  else if (k==='arrowright'||k==='d') { gs.playerLane = Math.min(2, gs.playerLane+1); gs.targetX = LANE_X[gs.playerLane]; }
+  else if (k==='arrowup'||k==='w'||k===' ') { if (!gs.jumping && gs.scooterTimer <= 0) { gs.jumping=true; gs.jumpVel=JUMP_FORCE; playSound('jump'); } }
+  else if (k==='arrowdown'||k==='s') { if (!gs.jumping && gs.scooterTimer <= 0) { gs.crouching=true; gs.crouchTimer=CROUCH_DUR; playSound('slide'); } }
+}
+
+function spawnObstacle() {
+  const r = rng();
+  const type = r < 0.20 ? 'bibi' : r < 0.38 ? 'taxman' : r < 0.46 ? 'train' : r < 0.52 ? 'rabbi' : r < 0.57 ? 'protester' : r < 0.62 ? 'roadblock' : r < 0.68 ? 'barrier' : ['bus','oldman'][rng()*2|0];
+  const openLane = rng()*3|0;
+  const lane = (type === 'train' || type === 'rabbi' || type === 'protester') ? 1
+             : type === 'roadblock' ? openLane
+             : rng()*3|0;
+  const colorIdx = rng()*5|0;
+  let mesh;
+  if (type==='train') mesh = createTrain();
+  else if (type==='bus') mesh = createBus(colorIdx);
+  else if (type==='oldman') mesh = createOldMan();
+  else if (type==='bibi') mesh = createNetanyahu();
+  else if (type==='taxman') mesh = createGoldknopf();
+  else if (type==='barrier') mesh = createPoliceBarrier();
+  else if (type==='rabbi') mesh = createGiantRabbi();
+  else if (type==='protester') mesh = createProtesterRoadblock();
+  else if (type==='roadblock') mesh = createRoadblock(openLane);
+  else mesh = createSign();
+  mesh.position.set((type === 'protester' || type === 'roadblock') ? 0 : LANE_X[lane], 0, gs.playerZ + SPAWN_Z);
+  scene.add(mesh);
+  gs.obstacles.push({type, lane, z: gs.playerZ + SPAWN_Z, mesh, colorIdx,
+    fired: type === 'oldman' ? false : undefined,
+    letterFired: type === 'taxman' ? false : undefined,
+    priceBumped: type === 'taxman' ? false : undefined,
+    throwTimer: type === 'taxman' ? 0 : undefined,
+  });
+
+  if (type !== 'train' && gs.speed > TIERS[gs.tier].speedCap * 0.75 && rng() > TIERS[gs.tier].pairThresh) {
+    const lane2 = [0,1,2].filter(l=>l!==lane)[rng()*2|0];
+    const obstTypes = ['bus','oldman','barrier'];
+    const type2 = obstTypes[rng()*3|0];
+    let mesh2;
+    if (type2==='bus') mesh2 = createBus(rng()*5|0);
+    else if (type2==='barrier') mesh2 = createPoliceBarrier();
+    else mesh2 = createOldMan();
+    mesh2.position.set(LANE_X[lane2], 0, gs.playerZ + SPAWN_Z);
+    scene.add(mesh2);
+    gs.obstacles.push({type:type2, lane:lane2, z:gs.playerZ+SPAWN_Z, mesh:mesh2, colorIdx:rng()*5|0, fired: type2 === 'oldman' ? false : undefined});
+  }
+}
+
+function spawnCoins() {
+  const lane = rng()*3|0;
+  const count = 3 + (rng()*4|0);
+  for (let i = 0; i < count; i++) {
+    const mesh = createCoin();
+    const z = gs.playerZ + SPAWN_Z - i*2;
+    mesh.position.set(LANE_X[lane], 0, z);
+    scene.add(mesh);
+    gs.coins.push({lane, z, mesh, collected:false, phase:rng()*6.28});
+  }
+}
+
+function spawnPowerup() {
+  const lane = rng()*3|0;
+  const r = rng();
+  const type = r < 0.28 ? 'scooter' : r < 0.53 ? 'ticket' : r < 0.68 ? 'trumpCoin' : 'ticket';
+  const mesh = createPowerup(type);
+  mesh.position.set(LANE_X[lane], 0, gs.playerZ + SPAWN_Z);
+  scene.add(mesh);
+  gs.powerups.push({type, lane, z:gs.playerZ+SPAWN_Z, mesh, collected:false});
+}
+
+function updateGame(dt) {
+  if (gs.state !== 'playing') return;
+  if (gs.giyusFreezeTimer > 0) {
+    gs.giyusFreezeTimer -= dt;
+    const secs = Math.ceil(gs.giyusFreezeTimer / 1000);
+    const cdEl = document.getElementById('giyusCountdown');
+    if (cdEl) cdEl.textContent = Math.max(1, secs);
+    if (gs.giyusFreezeTimer <= 0) {
+      gs.giyusFreezeTimer = 0;
+      document.getElementById('giyusHitOverlay').style.display = 'none';
+    }
+    return;
+  }
+  const fs = Math.min(dt, 50) / 16.67;
+  gs.taxmanNearby = false;
+  gs.frame++;
+  // Tier upgrade check
+  const newTierIdx = TIERS.reduce((best, t, i) => gs.distance >= t.dist ? i : best, 0);
+  if (newTierIdx > gs.tier) {
+    gs.tier = newTierIdx;
+    addFloatingText(TIERS[newTierIdx].name + '!', '#ff4400');
+  }
+  const T = TIERS[gs.tier];
+  gs.speed = Math.min(T.speedCap, gs.speed + 0.00004 * dt);
+  gs.playerZ -= gs.speed * fs;
+  gs.playerX += (gs.targetX - gs.playerX) * 0.18;
+
+  if (gs.jumping) {
+    gs.jumpVel -= GRAVITY * fs;
+    gs.jumpY += gs.jumpVel * fs;
+    if (gs.jumpY <= 0) { gs.jumpY=0; gs.jumpVel=0; gs.jumping=false; }
+  }
+  if (gs.crouching) { gs.crouchTimer -= fs; if (gs.crouchTimer <= 0) { gs.crouchTimer=0; gs.crouching=false; } }
+  if (gs.multTimer > 0) { gs.multTimer -= dt; if (gs.multTimer <= 0) { gs.multTimer=0; gs.multiplier=1; } }
+  if (gs.magnetTimer > 0) gs.magnetTimer -= dt;
+  if (gs.scooterTimer > 0) gs.scooterTimer -= dt;
+  if (gs.trumpTimer > 0) gs.trumpTimer -= dt;
+
+  // TEST: force-spawn Goldknopf at 1000m (remove when done testing)
+  if (!gs.testTaxmanSpawned && gs.distance >= 500) {
+    gs.testTaxmanSpawned = true;
+    const mesh = createGoldknopf();
+    mesh.position.set(LANE_X[1], 0, gs.playerZ + SPAWN_Z);
+    scene.add(mesh);
+    gs.obstacles.push({type:'taxman', lane:1, z:gs.playerZ+SPAWN_Z, mesh, colorIdx:0, letterFired:false, priceBumped:false, throwTimer:0});
+  }
+
+  gs.spawnT += fs;
+  const spawnInt = Math.max(T.spawnMin, 200 - (gs.speed - 0.15) * T.spawnScale);
+  if (gs.distance >= 1000) {
+    if (gs.spawnT > spawnInt) { spawnObstacle(); gs.spawnT = 0; }
+    gs.coinT += fs;
+    if (gs.coinT > 55) { spawnCoins(); gs.coinT = 0; }
+    gs.puT += fs;
+    if (gs.puT > 220 + Math.random() * 180) { spawnPowerup(); gs.puT = 0; }
+  }
+
+  // collision & cleanup � buses drive toward the player
+  for (let i = gs.obstacles.length - 1; i >= 0; i--) {
+    const o = gs.obstacles[i];
+    if (o.type === 'bus') {
+      o.z += (gs.speed * 0.6 + 0.12) * fs;
+    }
+    if (o.type === 'bibi') {
+      o.z += (gs.speed * 1.5 + 0.42) * fs;
+    }
+    const relZ = o.z - gs.playerZ;
+    if (relZ > 15) { scene.remove(o.mesh); gs.obstacles.splice(i, 1); continue; }
+    o.mesh.position.z = o.z;
+
+    if (o.type === 'bus' && o.mesh.children) {
+      o.mesh.children.forEach(child => {
+        if (child.geometry && child.geometry.type === 'CylinderGeometry' &&
+            child.material && child.material.color && child.material.color.r < 0.15) {
+          child.rotation.x += 0.15 * fs;
+        }
+      });
+    }
+    if (o.mesh.userData.light) {
+      const blink = o.type === 'barrier'
+        ? (Math.floor(gs.frame * 0.18) % 2 === 0 ? 1.2 : 0.1)
+        : 0.3 + Math.sin(gs.frame * 0.15) * 0.5;
+      o.mesh.userData.light.material.emissiveIntensity = blink;
+    }
+    if (o.type === 'bibi') {
+      if (o.mesh.userData.head) o.mesh.userData.head.lookAt(camera.position);
+      if (o.mesh.userData.warn) {
+        o.mesh.userData.warn.lookAt(camera.position);
+        o.mesh.userData.warn.position.y = 4.7 + Math.sin(gs.frame * 0.14) * 0.18;
+      }
+      const runPhase = gs.frame * 0.28;
+      if (o.mesh.userData.arms) {
+        o.mesh.userData.arms[0].rotation.x =  Math.sin(runPhase) * 0.7;
+        o.mesh.userData.arms[1].rotation.x = -Math.sin(runPhase) * 0.7;
+      }
+      if (o.mesh.userData.legs) {
+        o.mesh.userData.legs[0].rotation.x = -Math.sin(runPhase) * 0.6;
+        o.mesh.userData.legs[1].rotation.x =  Math.sin(runPhase) * 0.6;
+      }
+    }
+    if (o.type === 'oldman') {
+      if (o.mesh.userData.head) o.mesh.userData.head.lookAt(camera.position);
+      if (o.mesh.userData.warn) {
+        o.mesh.userData.warn.lookAt(camera.position);
+        o.mesh.userData.warn.position.y = 4.7 + Math.sin(gs.frame * 0.1) * 0.15;
+      }
+      // Fire when player is in his lane and in range (cannot jump over bullet � must slide)
+      // Only fire when player is far enough; if too close, don't spawn bullet
+      const farMin = 10, farMax = 28;
+      if (o.lane === gs.playerLane && relZ > -farMax && relZ < -farMin && o.fired === false) {
+        o.fired = true;
+        const bulletMesh = createBulletMesh();
+        bulletMesh.position.set(LANE_X[o.lane], 1.5, o.z);
+        scene.add(bulletMesh);
+        gs.bullets.push({ z: o.z, x: LANE_X[o.lane], lane: o.lane, mesh: bulletMesh });
+      }
+    }
+
+    if (o.type === 'rabbi' && o.mesh.userData.warn) {
+      o.mesh.userData.warn.lookAt(camera.position);
+      o.mesh.userData.warn.position.y = 6.2 + Math.sin(gs.frame * 0.1) * 0.25;
+      if (o.mesh.userData.dangerBar) {
+        const blink = Math.sin(gs.frame * 0.35) > 0;
+        o.mesh.userData.dangerBar.material.emissiveIntensity = blink ? 0.9 : 0.25;
+      }
+    }
+
+    // ── Tax Collector logic ──
+    if (o.type === 'taxman') {
+      if (o.mesh.userData.head) o.mesh.userData.head.lookAt(camera.position);
+      if (o.mesh.userData.warn) {
+        o.mesh.userData.warn.lookAt(camera.position);
+        o.mesh.userData.warn.position.y = 5.7 + Math.sin(gs.frame * 0.13) * 0.22;
+      }
+      // Set taxman nearby flags for coin magnet
+      if (relZ > -16 && relZ < 4) {
+        gs.taxmanNearby = true;
+        gs.taxmanX = LANE_X[o.lane];
+      }
+      // Arm reach + bag shake animation when player is nearby
+      if (o.mesh.userData.lArm) {
+        if (gs.taxmanNearby && o.lane === gs.playerLane) {
+          // Arm reaches forward/toward player — grabbing motion
+          o.mesh.userData.lArm.rotation.z = -1.35 + Math.sin(gs.frame * 0.22) * 0.22;
+          o.mesh.userData.lArm.rotation.x =  0.55 + Math.sin(gs.frame * 0.22) * 0.18;
+          if (o.mesh.userData.bag) {
+            o.mesh.userData.bag.position.x = -0.92 + Math.sin(gs.frame * 0.22) * 0.12;
+            o.mesh.userData.bag.position.y = 2.05 + Math.abs(Math.sin(gs.frame * 0.22)) * 0.15;
+          }
+        } else {
+          o.mesh.userData.lArm.rotation.z = -0.9;
+          o.mesh.userData.lArm.rotation.x = 0;
+          if (o.mesh.userData.bag) {
+            o.mesh.userData.bag.position.x = -0.92;
+            o.mesh.userData.bag.position.y = 2.05;
+          }
+        }
+      }
+      // Fire fine letter when in range & same lane
+      if (o.lane === gs.playerLane && relZ > -35 && relZ < -10 && o.letterFired === false) {
+        o.letterFired = true;
+        o.throwTimer = 80;
+        const envMesh = createDraftOrderMesh();
+        envMesh.position.set(LANE_X[o.lane], 1.4, o.z);
+        scene.add(envMesh);
+        gs.taxLetters.push({z: o.z, x: LANE_X[o.lane], mesh: envMesh});
+      }
+      // Throw arm animation — 3 phases
+      if (o.mesh.userData.rArm) {
+        if (o.throwTimer > 0) {
+          o.throwTimer = Math.max(0, o.throwTimer - fs);
+          const arm = o.mesh.userData.rArm;
+          if (o.throwTimer > 50) {
+            // Phase 1: wind-up — arm goes back and up
+            const p = (80 - o.throwTimer) / 30;
+            arm.rotation.z = 0.4 + p * 0.4;
+            arm.rotation.x = p * 1.2;
+          } else if (o.throwTimer > 20) {
+            // Phase 2: throw — arm swings hard forward
+            const p = (50 - o.throwTimer) / 30;
+            arm.rotation.z = 0.8 - p * 2.6;
+            arm.rotation.x = 1.2 - p * 2.7;
+          } else {
+            // Phase 3: recover — returns to rest
+            const p = o.throwTimer / 20;
+            arm.rotation.z = 0.4 * (1 - p) + (-1.8) * p;
+            arm.rotation.x = (-1.5) * p;
+          }
+        } else {
+          o.mesh.userData.rArm.rotation.z = 0.4;
+          o.mesh.userData.rArm.rotation.x = 0;
+        }
+      }
+      // Bus price hike when he passes
+      if (relZ > 10 && !o.priceBumped) {
+        o.priceBumped = true;
+        gs.busPrice = Math.min(30, gs.busPrice + 0.20);
+        addFloatingText('\u05DE\u05D7\u05D9\u05E8\u05D9\u05DD \u05E2\u05D5\u05DC\u05D9\u05DD! \uD83D\uDCB8', '#ff4444');
+        bumpBusPrice();
+      }
+      // Continuous coin drain while in same lane at close range
+      if (o.lane === gs.playerLane && relZ > -2.5 && relZ < 2.5 && gs.scooterTimer <= 0) {
+        const drainPerSec = 0.08;
+        gs.nis = Math.max(0, gs.nis - drainPerSec * (dt / 1000));
+        if (!o.touchShown) { o.touchShown = true; showTzavOverlay(); }
+      }
+      // Reset flag when player leaves range so it can trigger again next encounter
+      if (relZ < -3 || relZ > 3) o.touchShown = false;
+    }
+
+    // Roadblock: flame animation
+    if (o.type === 'roadblock' && o.mesh.userData.flames) {
+      o.mesh.userData.flames.forEach(fl => {
+        const t = gs.frame * 0.18 + fl.userData.phase;
+        fl.position.y = fl.userData.baseY + Math.sin(t) * 0.22;
+        fl.scale.x = 0.85 + Math.sin(t * 1.3) * 0.18;
+        fl.scale.z = 0.85 + Math.cos(t * 1.1) * 0.18;
+        fl.material.opacity = 0.7 + Math.sin(t * 0.9) * 0.25;
+      });
+      // Arrow hint pulses when roadblock is approaching
+      if (o.mesh.userData.arrowSign) {
+        o.mesh.userData.arrowSign.position.y = 3.2 + Math.sin(gs.frame * 0.15) * 0.18;
+      }
+    }
+
+    const inLane = (o.type === 'train' || o.type === 'rabbi' || o.type === 'protester') ? true
+                 : o.type === 'roadblock' ? o.lane !== gs.playerLane
+                 : o.lane === gs.playerLane;
+
+
+    if (relZ > -2 && relZ < 2 && inLane && gs.scooterTimer <= 0) {
+      let hit = false;
+      if (o.type === 'train') hit = gs.jumpY <= 2.2;
+      else if (o.type === 'bus') hit = gs.jumpY <= 2.5;
+      else if (o.type === 'bibi') hit = gs.jumpY <= 2.0;
+      else if (o.type === 'oldman') hit = gs.jumpY <= 1.5;
+      else if (o.type === 'barrier') hit = !gs.crouching;
+      else if (o.type === 'rabbi') hit = !gs.crouching;
+      else if (o.type === 'sign') hit = !gs.crouching;
+      else if (o.type === 'protester') hit = gs.jumpY <= 1.8;
+      else if (o.type === 'roadblock') hit = true; // wrong lane = always hit
+      // taxman never kills — handled above with drain
+      if (hit && !gs.stumbling) { gs.stumbling = true; gs.stumbleTimer = 800; gs.chaserGap = Math.min(gs.chaserGap, 5); addFloatingText('STUMBLE!', '#ff4444'); playSound('stumble'); }
+    }
+  }
+
+  // Bullets: move toward player (positive z); hit only if not crouching (slide to dodge)
+  for (let i = gs.bullets.length - 1; i >= 0; i--) {
+    const b = gs.bullets[i];
+    b.z += BULLET_SPEED * fs;
+    b.mesh.position.z = b.z;
+    b.mesh.position.x = b.x;
+    if (b.z > gs.playerZ + 2) {
+      scene.remove(b.mesh);
+      gs.bullets.splice(i, 1);
+      continue;
+    }
+    const bulletRelZ = b.z - gs.playerZ;
+    if (bulletRelZ > -1.2 && bulletRelZ < 1.2 && Math.abs(b.x - gs.playerX) < 1.8 && gs.scooterTimer <= 0) {
+      if (!gs.crouching && !gs.stumbling) {
+        gs.stumbling = true; gs.stumbleTimer = 800; gs.chaserGap = Math.min(gs.chaserGap, 5); addFloatingText('STUMBLE!', '#ff4444'); playSound('stumble');
+        scene.remove(b.mesh); gs.bullets.splice(i, 1);
+      }
+    }
+  }
+
+  // Tax letters — slower than bullets; dodge by jumping OR sliding
+  const LETTER_SPEED = 0.12;
+  for (let i = gs.taxLetters.length - 1; i >= 0; i--) {
+    const tl = gs.taxLetters[i];
+    tl.z += LETTER_SPEED * fs;
+    tl.mesh.position.z = tl.z;
+    tl.mesh.position.x = tl.x;
+    // no spin — job application stays flat
+    tl.mesh.position.y = 1.4 + Math.sin(gs.frame * 0.08 + i) * 0.15; // slight bob
+    if (tl.z > gs.playerZ + 3) {
+      scene.remove(tl.mesh);
+      gs.taxLetters.splice(i, 1);
+      continue;
+    }
+    const tlRelZ = tl.z - gs.playerZ;
+    if (tlRelZ > -1.5 && tlRelZ < 1.5 && Math.abs(tl.x - gs.playerX) < 1.6 && gs.scooterTimer <= 0) {
+      const dodged = gs.jumpY > 0.5 || gs.crouching;
+      if (!dodged) {
+        const unit = DRAFT_UNITS[Math.floor(Math.random() * DRAFT_UNITS.length)];
+        showGiyusHitOverlay(unit);
+        gs.giyusFreezeTimer = 3000;
+        // Remove the Goldknopf who fired this letter
+        const taxIdx = gs.obstacles.findIndex(o => o.type === 'taxman' && o.letterFired);
+        if (taxIdx !== -1) { scene.remove(gs.obstacles[taxIdx].mesh); gs.obstacles.splice(taxIdx, 1); }
+        scene.remove(tl.mesh);
+        gs.taxLetters.splice(i, 1);
+      }
+    }
+  }
+
+  for (let i = gs.coins.length-1; i >= 0; i--) {
+    const c = gs.coins[i];
+    const relZ = c.z - gs.playerZ;
+    if (c.collected || relZ > 15) { scene.remove(c.mesh); gs.coins.splice(i, 1); continue; }
+    c.mesh.position.z = c.z;
+    c.mesh.rotation.y = gs.frame * 0.04;
+    c.mesh.position.y = 1.2 + Math.sin(gs.frame*0.08+c.phase)*0.2;
+
+    if (gs.magnetTimer > 0) {
+      const dx = gs.playerX - LANE_X[c.lane];
+      const dz = gs.playerZ - c.z;
+      const dist = Math.sqrt(dx*dx+dz*dz);
+      if (dist < 6) {
+        c.mesh.position.x += dx * 0.05;
+        c.z += dz * 0.05;
+      }
+    }
+    // Goldknopf coin steal — strongly pulls coins toward himself when visible
+    if (gs.taxmanNearby) {
+      const tdx = gs.taxmanX - c.mesh.position.x;
+      const tdz = gs.taxmanX - c.z;
+      const tdist = Math.abs(tdx) + Math.abs(relZ);
+      if (tdist < 18) {
+        c.mesh.position.x += tdx * 0.18;
+        c.z -= Math.abs(relZ) > 1 ? 0.10 : 0;
+        // Remove coin when it reaches him
+        if (Math.abs(tdx) < 0.4 && Math.abs(c.z - gs.taxmanX) < 2) {
+          c.collected = true;
+        }
+      }
+    }
+
+    if (relZ > -1.5 && relZ < 1.5 && Math.abs(c.mesh.position.x - gs.playerX) < 1.5) {
+      c.collected = true;
+      playSound('coin');
+      const val = 0.10 * gs.multiplier * (gs.trumpTimer > 0 ? 10 : 1);
+      gs.nis += val; gs.totalNis += val;
+      addFloatingText(gs.trumpTimer > 0 ? `+$${val.toFixed(2)}` : `+\u20AA${val.toFixed(2)}`, gs.trumpTimer > 0 ? '#ff6600' : '#FFD700');
+      if (Math.floor(gs.totalNis * 10) % 50 === 0 && gs.totalNis > 0) {
+        gs.busPrice += 0.10 + Math.random()*0.15;
+        addFloatingText(`\uD83D\uDE8C Price UP! \u20AA${gs.busPrice.toFixed(2)}`, '#ff4444');
+        bumpBusPrice();
+      }
+    }
+  }
+
+  for (let i = gs.powerups.length-1; i >= 0; i--) {
+    const p = gs.powerups[i];
+    const relZ = p.z - gs.playerZ;
+    if (p.collected || relZ > 15) { scene.remove(p.mesh); gs.powerups.splice(i, 1); continue; }
+    p.mesh.position.z = p.z;
+    if (p.type === 'scooter') {
+      p.mesh.rotation.y = gs.frame * 0.025;
+      p.mesh.position.y = 1.6 + Math.sin(gs.frame * 0.07) * 0.25;
+      if (p.mesh.userData.wheels) {
+        p.mesh.userData.wheels.forEach(w => { w.rotation.z += 0.08; });
+      }
+    } else if (p.type === 'ticket') {
+      p.mesh.children[0].lookAt(camera.position);
+      if (p.mesh.children[1]) p.mesh.children[1].lookAt(camera.position);
+      p.mesh.position.y = 1.8 + Math.sin(gs.frame*0.08)*0.25;
+    } else if (p.type === 'trumpCoin') {
+      p.mesh.position.y = 1.9 + Math.sin(gs.frame * 0.07) * 0.2;
+    } else {
+      p.mesh.children[0].rotation.y = gs.frame*0.03;
+      p.mesh.children[0].rotation.x = gs.frame*0.02;
+      p.mesh.position.y = 1.5 + Math.sin(gs.frame*0.08)*0.2;
+    }
+
+    if (relZ > -1.5 && relZ < 1.5 && p.lane === gs.playerLane) {
+      p.collected = true;
+      if (p.type==='scooter') { gs.scooterTimer=5000; addFloatingText('ELECTRIC SCOOTER!', '#00cc88'); playSound('scooter'); }
+      else if (p.type==='ticket') { gs.multiplier=2; gs.multTimer=5000; addFloatingText('FLIGHT TICKET x2 GOLD!', '#ffcc00'); playSound('powerup'); }
+      else if (p.type==='trumpCoin') { gs.trumpTimer=5000; addFloatingText('TRUMP COIN! $$$', '#ff6600'); playSound('powerup'); }
+      else { gs.multiplier=2; gs.multTimer=7000; addFloatingText('x2 NIS!', '#44ffaa'); playSound('powerup'); }
+    }
+  }
+
+  gs.distance += gs.speed * fs * 10;
+
+  // Chaser inspector — visible at start, falls back during normal play, rushes in on stumble
+  if (gs.stumbling) {
+    gs.stumbleTimer -= dt;
+    gs.chaserGap -= 0.09 * fs;
+    gs.speed *= 0.96;
+    if (gs.stumbleTimer <= 0) {
+      gs.stumbling = false;
+    }
+  } else {
+    // Slowly falls further behind — max gap of 35 (off-screen/invisible)
+    gs.chaserGap = Math.min(35, gs.chaserGap + 0.018 * fs);
+  }
+
+  gs.chaserX += (LANE_X[gs.playerLane] - gs.chaserX) * 0.025 * fs;
+  const chaserZ = gs.playerZ + gs.chaserGap;
+  chaserInspector.position.set(gs.chaserX, 0, chaserZ);
+  updateChaserInspector(chaserInspector, gs.frame, gs.chaserGap);
+
+  if (gs.chaserGap < 5 && !gs.warnSounded) { gs.warnSounded = true; playSound('warn'); }
+  if (gs.chaserGap >= 5) gs.warnSounded = false;
+
+  if (gs.chaserGap <= 1.5) {
+    gs.state = 'dead';
+    stopBgMusic();
+    playSound('gameover');
+    return;
+  }
+}
+
+// �?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?
+// HUD
+// �?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?
+const elNis = document.getElementById('hudNis');
+const elDist = document.getElementById('hudDistance');
+const elTier = document.getElementById('hudTier');
+const elHudDaily = document.getElementById('hudDaily');
+const elBP = document.getElementById('hudBusPrice');
+const elMult = document.getElementById('hudMultiplier');
+const elScooter = document.getElementById('hudScooter');
+const elTrump = document.getElementById('hudTrump');
+const elAJ = document.getElementById('hudActionJump');
+const elAS = document.getElementById('hudActionSlide');
+const elMenu = document.getElementById('menuOverlay');
+const elGO = document.getElementById('gameOverOverlay');
+const elGoNis = document.getElementById('goNis');
+const elGoDist = document.getElementById('goDistance');
+const elGoPrice = document.getElementById('goPrice');
+const elFloat = document.getElementById('floatingTextContainer');
+
+const elChaserWarn = document.getElementById('hudChaserWarn');
+const elStumble = document.getElementById('stumbleOverlay');
+
+function updateHUD() {
+  elNis.textContent = `\u20AA ${gs.nis.toFixed(2)}`;
+  elDist.textContent = `${Math.floor(gs.distance)}m`;
+  if (gs.tier > 0) { elTier.style.display = 'inline'; elTier.textContent = TIERS[gs.tier].name; }
+  else elTier.style.display = 'none';
+  elHudDaily.style.display = gs.dailyMode ? 'inline' : 'none';
+  elBP.textContent = `\uD83D\uDE8C Ticket: \u20AA${gs.busPrice.toFixed(2)}`;
+  elMult.classList.toggle('active', gs.multiplier>1);
+  elMult.textContent = `x${gs.multiplier}`;
+  elScooter.classList.toggle('active', gs.scooterTimer > 0);
+  elScooter.textContent = gs.scooterTimer > 0 ? `SCOOTER! ${(gs.scooterTimer/1000).toFixed(1)}s` : 'SCOOTER!';
+  elTrump.style.display = gs.trumpTimer > 0 ? 'inline-block' : 'none';
+  if (gs.trumpTimer > 0) elTrump.textContent = `$ TRUMP COIN ${(gs.trumpTimer/1000).toFixed(1)}s`;
+  elAJ.classList.toggle('active', gs.jumping);
+  elAS.classList.toggle('active', gs.crouching);
+  elChaserWarn.style.display = gs.chaserGap < 5 ? 'block' : 'none';
+  elStumble.style.display = gs.stumbling ? 'block' : 'none';
+}
+
+const DRAFT_UNITS = [
+  '\u05D4\u05EA\u05E7\u05D1\u05DC\u05EA \u05DC\u05D2\u05D5\u05DC\u05E0\u05D9',
+  '\u05D4\u05EA\u05E7\u05D1\u05DC\u05EA \u05DC\u05E9\u05D9\u05D9\u05D8\u05EA 13',
+  '\u05D4\u05EA\u05E7\u05D1\u05DC\u05EA \u05DC\u05DE\u05D5\u05D3\u05D9\u05E2\u05D9\u05DF',
+  '\u05D4\u05EA\u05E7\u05D1\u05DC\u05EA \u05DC\u05E0\u05D7\u05DC',
+  '\u05E4\u05E8\u05D5\u05E4\u05D9\u05DC 97 \u05D1\u05E7\u05DC',
+  '\u05D4\u05EA\u05E7\u05D1\u05DC\u05EA \u05DC\u05E6\u05E0\u05D7\u05E0\u05D9\u05DD',
+];
+function showGiyusHitOverlay(unit) {
+  document.getElementById('giyusHitUnit').textContent = unit;
+  document.getElementById('giyusCountdown').textContent = '3';
+  document.getElementById('giyusHitOverlay').style.display = 'flex';
+}
+
+let _tzavTimer = 0;
+function showTzavOverlay() {
+  const el = document.getElementById('tzavOverlay');
+  el.style.display = 'flex';
+  clearTimeout(_tzavTimer);
+  _tzavTimer = setTimeout(() => { el.style.display = 'none'; }, 1000);
+}
+
+function addFloatingText(text, color) {
+  const el = document.createElement('div');
+  el.textContent = text;
+  el.style.cssText = `position:absolute;left:50%;top:45%;transform:translate(-50%,-50%);color:${color};font-size:22px;font-weight:bold;text-shadow:0 0 12px ${color}40;pointer-events:none;white-space:nowrap`;
+  elFloat.appendChild(el);
+  let life = 1, vy = -2.5;
+  const tick = () => {
+    vy *= 0.95; life -= 0.03;
+    const t = parseFloat(el.style.top);
+    el.style.top = (t + vy) + '%';
+    el.style.opacity = Math.max(0, life);
+    if (life <= 0) { el.remove(); return; }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+function bumpBusPrice() {
+  elBP.classList.remove('bump');
+  elBP.offsetHeight;
+  elBP.classList.add('bump');
+  setTimeout(() => elBP.classList.remove('bump'), 300);
+}
+
+// �?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?
+// GAME FLOW
+// �?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?
+const miri = createMiriCharacter();
+scene.add(miri);
+
+const chaserInspector = createChaserInspector();
+chaserInspector.position.set(0, 0, 6);
+chaserInspector.visible = false;
+scene.add(chaserInspector);
+
+function loadScores() {
+  try { return JSON.parse(localStorage.getItem('miriSurfersScores')) || []; }
+  catch { return []; }
+}
+function saveScore(dist, nis) {
+  const scores = loadScores();
+  scores.push({dist: Math.floor(dist), nis: +nis.toFixed(2)});
+  scores.sort((a, b) => b.dist - a.dist);
+  localStorage.setItem('miriSurfersScores', JSON.stringify(scores.slice(0, 5)));
+}
+function renderScores(listEl) {
+  const scores = loadScores();
+  listEl.innerHTML = scores.length
+    ? scores.map(s => `<li>${s.dist}m \u2014 \u20AA${s.nis}</li>`).join('')
+    : '<li style="opacity:0.5;list-style:none">No runs yet</li>';
+}
+function dailyKey() {
+  const d = new Date();
+  return `miriSurfersDailyScores_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+}
+function loadDailyScores() {
+  try { return JSON.parse(localStorage.getItem(dailyKey())) || []; }
+  catch { return []; }
+}
+function saveDailyScore(dist, nis) {
+  const scores = loadDailyScores();
+  scores.push({dist: Math.floor(dist), nis: +nis.toFixed(2)});
+  scores.sort((a, b) => b.dist - a.dist);
+  localStorage.setItem(dailyKey(), JSON.stringify(scores.slice(0, 5)));
+}
+function renderDailyScores(listEl) {
+  const scores = loadDailyScores();
+  listEl.innerHTML = scores.length
+    ? scores.map(s => `<li>${s.dist}m \u2014 \u20AA${s.nis}</li>`).join('')
+    : '<li style="opacity:0.5;list-style:none">No runs today</li>';
+}
+
+renderScores(document.getElementById('menuScoreList'));
+renderDailyScores(document.getElementById('menuDailyList'));
+const _today = new Date();
+document.getElementById('dailyDateLabel').textContent =
+  `${_today.getDate()}/${_today.getMonth()+1}/${_today.getFullYear()} \u2014 same seed for everyone!`;
+
+document.getElementById('btnStart').onclick = () => {
+  _ac();
+  gs.dailyMode = false; gs._rng = null;
+  resetGame();
+  gs.state = 'playing';
+  gs.targetX = LANE_X[1];
+  chaserInspector.visible = true;
+  elMenu.classList.remove('visible');
+  elGO.classList.remove('visible');
+  startBgMusic();
+};
+
+document.getElementById('btnDaily').onclick = () => {
+  _ac();
+  gs.dailyMode = true; gs._rng = mulberry32(todaySeed());
+  resetGame();
+  gs.state = 'playing';
+  gs.targetX = LANE_X[1];
+  chaserInspector.visible = true;
+  elMenu.classList.remove('visible');
+  elGO.classList.remove('visible');
+  startBgMusic();
+};
+
+document.getElementById('btnTryAgain').onclick = () => {
+  const wasDaily = gs.dailyMode;
+  if (wasDaily) { gs.dailyMode = true; gs._rng = mulberry32(todaySeed()); }
+  resetGame();
+  gs.state = 'playing';
+  gs.targetX = LANE_X[1];
+  chaserInspector.visible = true;
+  elMenu.classList.remove('visible');
+  elGO.classList.remove('visible');
+  startBgMusic();
+};
+
+document.addEventListener('keydown', e => {
+  if (gs.state === 'playing') {
+    handleKey(e.key);
+    e.preventDefault();
+  } else if (gs.state === 'menu' || gs.state === 'dead') {
+    if (e.key === 'Enter' || e.key === ' ') {
+      const btn = document.getElementById(gs.state === 'dead' ? 'btnTryAgain' : 'btnStart');
+      if (btn) btn.click();
+      e.preventDefault();
+    }
+  }
+});
+
+let touchSX=0, touchSY=0;
+renderer.domElement.addEventListener('touchstart', e => { touchSX=e.touches[0].clientX; touchSY=e.touches[0].clientY; e.preventDefault(); }, {passive:false});
+renderer.domElement.addEventListener('touchend', e => {
+  if (gs.state !== 'playing') return;
+  const dx=e.changedTouches[0].clientX-touchSX, dy=e.changedTouches[0].clientY-touchSY;
+  if (Math.abs(dx)>Math.abs(dy)) { handleKey(dx>30?'ArrowRight':'ArrowLeft'); }
+  else { handleKey(dy<-30?'ArrowUp':'ArrowDown'); }
+  e.preventDefault();
+}, {passive:false});
+
+let lastTime = performance.now();
+let deadShown = false;
+
+function loop() {
+  requestAnimationFrame(loop);
+  const now = performance.now(), dt = now - lastTime;
+  lastTime = now;
+
+  if (gs.state === 'playing') {
+    updateGame(dt);
+    let skyY = 0;
+    if (gs.scooterTimer > 0) {
+      if (gs.scooterTimer <= 500) {
+        const landT = (500 - gs.scooterTimer) / 500;
+        const easeIn = landT * landT;
+        skyY = 8 * (1 - easeIn);
+      } else {
+        const riseMs = Math.min(500, 5000 - gs.scooterTimer);
+        const t = Math.min(1, riseMs / 450);
+        const easeOut = 1 - (1 - t) * (1 - t);
+        skyY = easeOut * 8 + Math.sin(gs.frame * 0.06) * 0.2;
+      }
+    }
+    const stumbleShake = gs.stumbling ? (Math.sin(gs.frame * 1.2) * 0.15) : 0;
+    miri.position.set(gs.playerX + stumbleShake, skyY, gs.playerZ);
+    miri.rotation.x = skyY > 0 ? 0.1 * (skyY / 8) : 0;
+    if (miri.userData.scooterRide) miri.userData.scooterRide.visible = skyY > 0;
+    updateMiri(miri, gs.frame, gs.jumping, gs.crouching, gs.jumpY, skyY > 0);
+    updateEnvironment(gs.playerZ);
+    updateHUD();
+    deadShown = false;
+  } else if (gs.state === 'dead' && !deadShown) {
+    deadShown = true;
+    chaserInspector.position.set(gs.playerX, 0, gs.playerZ + 2);
+    updateChaserInspector(chaserInspector, gs.frame, 0);
+    elChaserWarn.style.display = 'none';
+    elStumble.style.display = 'none';
+    elGoNis.textContent = `\u20AA${gs.nis.toFixed(2)} collected`;
+    elGoDist.textContent = `${Math.floor(gs.distance)}m`;
+    elGoPrice.textContent = `\uD83D\uDE8C \u20AA${BASE_BUS_PRICE.toFixed(2)} \u2192 \u20AA${gs.busPrice.toFixed(2)}`;
+    if (gs.dailyMode) {
+      saveDailyScore(gs.distance, gs.nis);
+      const _daily = loadDailyScores();
+      const _dpb = _daily[0];
+      const _isDailyBest = _dpb && _dpb.dist === Math.floor(gs.distance) && _daily.filter(s => s.dist === _dpb.dist).length === 1;
+      document.getElementById('goPersonalBest').textContent = _isDailyBest ? '\uD83D\uDCC5 DAILY BEST!' : (_dpb ? `Daily best: ${_dpb.dist}m` : '');
+      document.getElementById('goDailyBoard').style.display = 'block';
+      renderDailyScores(document.getElementById('goDailyList'));
+      renderScores(document.getElementById('goScoreList'));
+    } else {
+      saveScore(gs.distance, gs.nis);
+      const _scores = loadScores();
+      const _pb = _scores[0];
+      const _isNewBest = _pb && _pb.dist === Math.floor(gs.distance) && _scores.filter(s => s.dist === _pb.dist).length === 1;
+      document.getElementById('goPersonalBest').textContent = _isNewBest ? '\uD83C\uDFC6 NEW PERSONAL BEST!' : (_pb ? `Best: ${_pb.dist}m` : '');
+      document.getElementById('goDailyBoard').style.display = 'none';
+      renderScores(document.getElementById('goScoreList'));
+    }
+    elGO.classList.add('visible');
+  }
+
+  renderer.render(scene, camera);
+}
+
+loop();
+</script>
+</body>
+</html>
