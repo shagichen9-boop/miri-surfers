@@ -17,10 +17,6 @@ body{background:#87CEEB;display:flex;justify-content:center;align-items:center;h
 .hud-distance{font-size:22px;color:#fff;font-weight:bold;text-shadow:2px 2px 6px rgba(0,0,0,0.9)}
 #hudBusPrice{position:absolute;top:55px;left:50%;transform:translateX(-50%);background:rgba(180,30,30,0.9);color:#fff;padding:7px 18px;border-radius:18px;font-size:16px;font-weight:bold;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,0.4);transition:transform 0.15s;z-index:5;pointer-events:none}
 #hudBusPrice.bump{transform:translateX(-50%) scale(1.3)}
-.hud-action{position:absolute;bottom:120px;left:50%;transform:translateX(-50%);font-size:20px;font-weight:bold;text-shadow:0 0 12px currentColor;pointer-events:none;display:none;z-index:5}
-.hud-action.active{display:block}
-#hudActionJump{color:#44ff44}
-#hudActionSlide{color:#ff44ff}
 #floatingTextContainer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden;z-index:6}
 .overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:none;flex-direction:column;justify-content:center;align-items:center;background:rgba(0,0,0,0.82);border-radius:14px;z-index:10}
 .overlay.visible{display:flex}
@@ -74,8 +70,6 @@ body{background:#87CEEB;display:flex;justify-content:center;align-items:center;h
     <span id="hudDaily" style="display:none;font-size:13px;font-weight:bold;color:#ffaa00;margin-left:6px">&#x1F4C5; DAILY</span>
   </div>
   <div id="hudBusPrice">&#x1F68C; Ticket: &#x20AA;5.50</div>
-  <div class="hud-action" id="hudActionJump">JUMP!</div>
-  <div class="hud-action" id="hudActionSlide">SLIDE!</div>
   <div id="hudChaserWarn" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:28px;font-weight:bold;color:#ff2222;text-shadow:0 0 20px #ff0000,0 0 40px #ff000088;pointer-events:none;z-index:6;animation:chaserPulse 0.5s infinite alternate">INSPECTOR IS CLOSE!</div>
   <div id="floatingTextContainer"></div>
   <div id="stumbleOverlay"></div>
@@ -3262,8 +3256,6 @@ const elBP = document.getElementById('hudBusPrice');
 const elMult = document.getElementById('hudMultiplier');
 const elScooter = document.getElementById('hudScooter');
 const elTrump = document.getElementById('hudTrump');
-const elAJ = document.getElementById('hudActionJump');
-const elAS = document.getElementById('hudActionSlide');
 const elMenu = document.getElementById('menuOverlay');
 const elGO = document.getElementById('gameOverOverlay');
 const elGoNis = document.getElementById('goNis');
@@ -3287,8 +3279,6 @@ function updateHUD() {
   elScooter.textContent = gs.scooterTimer > 0 ? `SCOOTER! ${(gs.scooterTimer/1000).toFixed(1)}s` : 'SCOOTER!';
   elTrump.style.display = gs.trumpTimer > 0 ? 'inline-block' : 'none';
   if (gs.trumpTimer > 0) elTrump.textContent = `$ TRUMP COIN ${(gs.trumpTimer/1000).toFixed(1)}s`;
-  elAJ.classList.toggle('active', gs.jumping);
-  elAS.classList.toggle('active', gs.crouching);
   elChaserWarn.style.display = gs.chaserGap < 5 ? 'block' : 'none';
   elStumble.style.display = gs.stumbling ? 'block' : 'none';
 }
