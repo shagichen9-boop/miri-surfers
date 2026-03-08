@@ -80,6 +80,7 @@ body{background:#87CEEB;display:flex;justify-content:center;align-items:center;h
     <button id="btnStart">START</button>
     <button id="btnDaily" style="margin-top:8px;padding:14px 40px;font-size:20px;background:linear-gradient(135deg,#aa6600,#ffaa00);border:none;border-radius:35px;color:#fff;font-weight:bold;cursor:pointer;letter-spacing:2px">&#x1F4C5; DAILY CHALLENGE</button>
     <div id="dailyDateLabel" style="font-size:12px;color:#ffcc88;margin-top:4px"></div>
+    <div id="dailyGoalLabel" style="font-size:13px;color:#ffdd00;font-weight:bold;margin-top:2px"></div>
     <div style="display:flex;gap:24px;margin-top:12px;font-size:13px;color:#fff;text-align:center">
       <div>
         <div style="color:#FFD700;font-weight:bold;margin-bottom:4px">&#x1F3C6; TOP RUNS</div>
@@ -114,6 +115,33 @@ body{background:#87CEEB;display:flex;justify-content:center;align-items:center;h
     <button id="btnTryAgain">TRY AGAIN</button>
   </div>
 
+  <div class="overlay" id="dailyWinOverlay">
+    <h1 style="color:#ffdd00;font-size:48px;margin:0">&#x1F3C6; הצלחת!</h1>
+    <h2 style="color:#fff;margin:8px 0">השלמת את האתגר היומי!</h2>
+    <div id="winGoalLabel" style="color:#ffaa00;font-size:18px;font-weight:bold;margin:6px 0"></div>
+    <div class="stats" style="margin:10px 0">
+      <div id="winNis"></div>
+      <div id="winDist"></div>
+    </div>
+    <div id="winDailyBoard" style="font-size:13px;color:#fff;text-align:center;margin-bottom:10px">
+      <div style="color:#ffaa00;font-weight:bold;margin-bottom:4px">&#x1F4C5; TODAY</div>
+      <ol id="winDailyList" style="margin:0;padding-left:22px;line-height:1.8;color:#ccc"></ol>
+    </div>
+    <button id="btnWinMenu" style="background:linear-gradient(135deg,#aa6600,#ffaa00);border:none;border-radius:35px;color:#fff;font-weight:bold;font-size:20px;padding:14px 40px;cursor:pointer">חזור לתפריט</button>
+  </div>
+
+  <div id="hudWordHunt" style="display:none;position:absolute;top:55px;right:10px;background:rgba(0,0,0,0.6);border:2px solid #ffcc00;border-radius:10px;padding:6px 12px;z-index:5;pointer-events:none;text-align:center">
+    <div style="font-size:10px;color:#ffcc00;font-weight:bold;margin-bottom:2px">&#x1F50E; WORD HUNT</div>
+    <div id="hudWordLetters" style="font-size:22px;font-weight:bold;letter-spacing:4px;color:#fff;direction:rtl"></div>
+  </div>
+
+  <div id="hudDailyProgress" style="display:none;position:absolute;bottom:10px;left:50%;transform:translateX(-50%);width:220px;z-index:5;pointer-events:none">
+    <div style="font-size:11px;color:#ffaa00;text-align:center;margin-bottom:2px" id="hudDailyProgressLabel"></div>
+    <div style="background:rgba(0,0,0,0.5);border-radius:8px;height:10px;width:100%;overflow:hidden;border:1px solid #ffaa00">
+      <div id="hudDailyProgressBar" style="height:100%;background:linear-gradient(90deg,#ffaa00,#ffdd00);width:0%;transition:width 0.3s;border-radius:8px"></div>
+    </div>
+  </div>
+
   <div id="controls-hint">&#x2190;&#x2192; lanes | &#x2191; jump | &#x2193; slide | swipe on mobile</div>
 </div>
 
@@ -134,6 +162,11 @@ function mulberry32(seed) {
 function todaySeed() {
   const d = new Date();
   return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+}
+function getDailyGoal() {
+  const seed = todaySeed();
+  const steps = ((seed * 1234567) >>> 0) % 31; // 0..30
+  return 5000 + steps * 500; // 5000, 5500, ..., 20000
 }
 function rng() { return gs.dailyMode ? gs._rng() : Math.random(); }
 
@@ -2684,6 +2717,16 @@ function stopBgMusic() {
 const GRAVITY = 0.028, JUMP_FORCE = 0.50, CROUCH_DUR = 30, SPAWN_Z = -80;
 const BASE_BUS_PRICE = 5.50;
 const BULLET_SPEED = 0.38;
+const WORD_LIST = [
+  '\u05DE\u05D9\u05E8\u05D9',      // מירי
+  '\u05DC\u05E4\u05D9\u05D3',      // לפיד
+  '\u05DB\u05E0\u05E1\u05EA',      // כנסת
+  '\u05E9\u05DC\u05D5\u05DD',      // שלום
+  '\u05DE\u05D7\u05D0\u05D4',      // מחאה
+  '\u05E0\u05E6\u05D7\u05D5\u05DF', // ניצחון
+  '\u05D7\u05D5\u05E4\u05E9',      // חופש
+  '\u05E2\u05DE\u05DC',            // עמל
+];
 const TIERS = [
   {dist:    0, name: null,           speedCap: 0.50, spawnMin:  95, spawnScale: 120, pairThresh: 0.88},
   {dist: 5000, name: 'RUSH HOUR',    speedCap: 0.58, spawnMin:  88, spawnScale: 128, pairThresh: 0.86},
@@ -2703,6 +2746,7 @@ const gs = {
   stumbling:false, stumbleTimer:0,
   warnSounded:false,
   testTaxmanSpawned:false,
+  wordHunt:{ word:'', collected:[], nextLetterIdx:0, done:false, letters:[], letterT:0 },
 };
 
 function resetGame() {
@@ -2711,6 +2755,8 @@ function resetGame() {
   gs.powerups.forEach(p => scene.remove(p.mesh));
   gs.bullets.forEach(b => scene.remove(b.mesh));
   gs.taxLetters.forEach(t => scene.remove(t.mesh));
+  if (gs.wordHunt) gs.wordHunt.letters.forEach(l => scene.remove(l.mesh));
+  const _newWord = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)];
   Object.assign(gs, {
     state:'menu', speed:0.15, frame:0, nis:0, totalNis:0, distance:0, tier:0, dailyMode:gs.dailyMode, _rng:gs._rng,
     busPrice:BASE_BUS_PRICE, multiplier:1, multTimer:0, magnetTimer:0, scooterTimer:0, trumpTimer:0, giyusFreezeTimer:0,
@@ -2724,6 +2770,7 @@ function resetGame() {
     stumbling:false, stumbleTimer:0,
     warnSounded:false,
     testTaxmanSpawned:false,
+    wordHunt:{ word:_newWord, collected:Array(_newWord.length).fill(false), nextLetterIdx:0, done:false, letters:[], letterT:0 },
   });
 
   // Reset road segments back to origin
@@ -2830,6 +2877,56 @@ function spawnCoins() {
   }
 }
 
+const LETTER_COLORS = ['#e63946','#2196f3','#4caf50','#9c27b0','#ff9800','#00bcd4','#f44336','#3f51b5'];
+function createLetterPickup(char, colorIdx) {
+  const size = 256;
+  const c = document.createElement('canvas'); c.width = size; c.height = size;
+  const ctx = c.getContext('2d');
+  const color = LETTER_COLORS[(colorIdx || 0) % LETTER_COLORS.length];
+  ctx.font = `bold ${size * 0.72}px Arial`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round';
+  // White outline
+  ctx.strokeStyle = '#ffffff'; ctx.lineWidth = size * 0.12;
+  ctx.strokeText(char, size/2, size/2 + size*0.05);
+  // Colored fill
+  ctx.fillStyle = color;
+  ctx.fillText(char, size/2, size/2 + size*0.05);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(2.2, 2.2),
+    new THREE.MeshBasicMaterial({map: tex, side: THREE.DoubleSide, transparent: true})
+  );
+  const g = new THREE.Group();
+  g.add(mesh);
+  return g;
+}
+
+function spawnNextLetter() {
+  const wh = gs.wordHunt;
+  if (wh.done || wh.nextLetterIdx >= wh.word.length) return;
+  const char = wh.word[wh.nextLetterIdx];
+  const lane = Math.floor(Math.random() * 3);
+  const mesh = createLetterPickup(char, wh.nextLetterIdx);
+  mesh.position.set(LANE_X[lane], 1.5, gs.playerZ + SPAWN_Z);
+  scene.add(mesh);
+  wh.letters.push({ char, lane, z: gs.playerZ + SPAWN_Z, mesh, collected: false, idx: wh.nextLetterIdx });
+  wh.nextLetterIdx++;
+  // Clear only items in the same lane within a tight radius of the letter
+  const letterZ = gs.playerZ + SPAWN_Z;
+  const CLEAR_R = 8;
+  for (let i = gs.coins.length - 1; i >= 0; i--) {
+    if (gs.coins[i].lane === lane && Math.abs(gs.coins[i].z - letterZ) < CLEAR_R) { scene.remove(gs.coins[i].mesh); gs.coins.splice(i, 1); }
+  }
+  for (let i = gs.obstacles.length - 1; i >= 0; i--) {
+    if (gs.obstacles[i].lane === lane && Math.abs(gs.obstacles[i].z - letterZ) < CLEAR_R) { scene.remove(gs.obstacles[i].mesh); gs.obstacles.splice(i, 1); }
+  }
+  for (let i = gs.powerups.length - 1; i >= 0; i--) {
+    if (gs.powerups[i].lane === lane && Math.abs(gs.powerups[i].z - letterZ) < CLEAR_R) { scene.remove(gs.powerups[i].mesh); gs.powerups.splice(i, 1); }
+  }
+}
+
 function spawnPowerup() {
   const lane = rng()*3|0;
   const r = rng();
@@ -2856,6 +2953,8 @@ function updateGame(dt) {
   const fs = Math.min(dt, 50) / 16.67;
   gs.taxmanNearby = false;
   gs.frame++;
+  // Daily challenge win check
+  if (gs.dailyMode && gs.distance >= getDailyGoal()) { gs.state = 'won'; return; }
   // Tier upgrade check
   const newTierIdx = TIERS.reduce((best, t, i) => gs.distance >= t.dist ? i : best, 0);
   if (newTierIdx > gs.tier) {
@@ -2878,23 +2977,20 @@ function updateGame(dt) {
   if (gs.scooterTimer > 0) gs.scooterTimer -= dt;
   if (gs.trumpTimer > 0) gs.trumpTimer -= dt;
 
-  // TEST: force-spawn Goldknopf at 1000m (remove when done testing)
-  if (!gs.testTaxmanSpawned && gs.distance >= 500) {
-    gs.testTaxmanSpawned = true;
-    const mesh = createGoldknopf();
-    mesh.position.set(LANE_X[1], 0, gs.playerZ + SPAWN_Z);
-    scene.add(mesh);
-    gs.obstacles.push({type:'taxman', lane:1, z:gs.playerZ+SPAWN_Z, mesh, colorIdx:0, letterFired:false, priceBumped:false, throwTimer:0});
-  }
 
   gs.spawnT += fs;
   const spawnInt = Math.max(T.spawnMin, 200 - (gs.speed - 0.15) * T.spawnScale);
-  if (gs.distance >= 1000) {
-    if (gs.spawnT > spawnInt) { spawnObstacle(); gs.spawnT = 0; }
-    gs.coinT += fs;
-    if (gs.coinT > 55) { spawnCoins(); gs.coinT = 0; }
-    gs.puT += fs;
-    if (gs.puT > 220 + Math.random() * 180) { spawnPowerup(); gs.puT = 0; }
+  if (gs.spawnT > spawnInt) { spawnObstacle(); gs.spawnT = 0; }
+  gs.coinT += fs;
+  if (gs.coinT > 55) { spawnCoins(); gs.coinT = 0; }
+  gs.puT += fs;
+  if (gs.puT > 220 + Math.random() * 180) { spawnPowerup(); gs.puT = 0; }
+  // Word hunt: spawn letters randomly throughout the run
+  { const wh = gs.wordHunt;
+    if (!wh.done && wh.nextLetterIdx < wh.word.length) {
+      wh.letterT += fs;
+      if (wh.letterT > 400 + Math.random() * 400) { spawnNextLetter(); wh.letterT = 0; }
+    }
   }
 
   // collision & cleanup � buses drive toward the player
@@ -3214,6 +3310,34 @@ function updateGame(dt) {
     }
   }
 
+  // Word hunt letter update
+  { const wh = gs.wordHunt;
+    for (let i = wh.letters.length - 1; i >= 0; i--) {
+      const l = wh.letters[i];
+      const relZ = l.z - gs.playerZ;
+      if (l.collected || relZ > 15) { scene.remove(l.mesh); wh.letters.splice(i, 1); continue; }
+      l.mesh.position.z = l.z;
+      l.mesh.position.y = 1.5 + Math.sin(gs.frame * 0.08 + i) * 0.2;
+      l.mesh.children[0].lookAt(camera.position);
+      if (!l.collected && relZ > -1.5 && relZ < 1.5 && l.lane === gs.playerLane) {
+        l.collected = true;
+        wh.collected[l.idx] = true;
+        playSound('coin');
+        addFloatingText(l.char, '#ffcc00');
+        updateWordHUD();
+        if (wh.collected.every(Boolean)) {
+          wh.done = true;
+          const bonus = 2.0;
+          gs.nis += bonus;
+          gs.totalNis += bonus;
+          addFloatingText('\u05DE\u05E9\u05D9\u05DE\u05D4 \u05D4\u05D5\u05E9\u05DC\u05DE\u05D4! +\u20AA2', '#ffdd00');
+          playSound('powerup');
+          updateWordHUD();
+        }
+      }
+    }
+  }
+
   gs.distance += gs.speed * fs * 10;
 
   // Chaser inspector — visible at start, falls back during normal play, rushes in on stumble
@@ -3266,12 +3390,34 @@ const elFloat = document.getElementById('floatingTextContainer');
 const elChaserWarn = document.getElementById('hudChaserWarn');
 const elStumble = document.getElementById('stumbleOverlay');
 
+function updateWordHUD() {
+  const wh = gs.wordHunt;
+  const el = document.getElementById('hudWordHunt');
+  const letEl = document.getElementById('hudWordLetters');
+  if (!wh || !wh.word) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  letEl.innerHTML = wh.word.split('').map((ch, i) =>
+    `<span style="color:${wh.collected[i] ? '#ffcc00' : 'rgba(255,255,255,0.35)'};text-shadow:${wh.collected[i] ? '0 0 8px #ffcc00' : 'none'}">${wh.collected[i] ? ch : '\u25A1'}</span>`
+  ).join('');
+  if (wh.done) el.style.borderColor = '#44ff44';
+}
+
 function updateHUD() {
   elNis.textContent = `\u20AA ${gs.nis.toFixed(2)}`;
   elDist.textContent = `${Math.floor(gs.distance)}m`;
   if (gs.tier > 0) { elTier.style.display = 'inline'; elTier.textContent = TIERS[gs.tier].name; }
   else elTier.style.display = 'none';
   elHudDaily.style.display = gs.dailyMode ? 'inline' : 'none';
+  const elDailyProg = document.getElementById('hudDailyProgress');
+  if (gs.dailyMode) {
+    const goal = getDailyGoal();
+    const pct = Math.min(100, (gs.distance / goal) * 100);
+    elDailyProg.style.display = 'block';
+    document.getElementById('hudDailyProgressBar').style.width = pct + '%';
+    document.getElementById('hudDailyProgressLabel').textContent = `${Math.floor(gs.distance)}m / ${goal.toLocaleString()}m`;
+  } else {
+    elDailyProg.style.display = 'none';
+  }
   elBP.textContent = `\uD83D\uDE8C Ticket: \u20AA${gs.busPrice.toFixed(2)}`;
   elMult.classList.toggle('active', gs.multiplier>1);
   elMult.textContent = `x${gs.multiplier}`;
@@ -3281,6 +3427,7 @@ function updateHUD() {
   if (gs.trumpTimer > 0) elTrump.textContent = `$ TRUMP COIN ${(gs.trumpTimer/1000).toFixed(1)}s`;
   elChaserWarn.style.display = gs.chaserGap < 5 ? 'block' : 'none';
   elStumble.style.display = gs.stumbling ? 'block' : 'none';
+  updateWordHUD();
 }
 
 const DRAFT_UNITS = [
@@ -3382,6 +3529,7 @@ renderDailyScores(document.getElementById('menuDailyList'));
 const _today = new Date();
 document.getElementById('dailyDateLabel').textContent =
   `${_today.getDate()}/${_today.getMonth()+1}/${_today.getFullYear()} \u2014 same seed for everyone!`;
+document.getElementById('dailyGoalLabel').textContent = `\uD83C\uDFC1 Today's goal: ${getDailyGoal().toLocaleString()}m`;
 
 document.getElementById('btnStart').onclick = () => {
   _ac();
@@ -3405,6 +3553,14 @@ document.getElementById('btnDaily').onclick = () => {
   elMenu.classList.remove('visible');
   elGO.classList.remove('visible');
   startBgMusic();
+};
+
+document.getElementById('btnWinMenu').onclick = () => {
+  document.getElementById('dailyWinOverlay').classList.remove('visible');
+  resetGame();
+  gs.dailyMode = false; gs._rng = null;
+  elMenu.classList.add('visible');
+  stopBgMusic();
 };
 
 document.getElementById('btnTryAgain').onclick = () => {
@@ -3501,6 +3657,18 @@ function loop() {
       renderScores(document.getElementById('goScoreList'));
     }
     elGO.classList.add('visible');
+  } else if (gs.state === 'won' && !deadShown) {
+    deadShown = true;
+    stopBgMusic();
+    elChaserWarn.style.display = 'none';
+    elStumble.style.display = 'none';
+    saveDailyScore(gs.distance, gs.nis);
+    const goal = getDailyGoal();
+    document.getElementById('winGoalLabel').textContent = `\uD83C\uDFC1 ${goal.toLocaleString()}m \u2014 \u05DE\u05E9\u05D9\u05DE\u05D4 \u05D4\u05D5\u05E9\u05DC\u05DE\u05D4!`;
+    document.getElementById('winNis').textContent = `\u20AA${gs.nis.toFixed(2)} collected`;
+    document.getElementById('winDist').textContent = `${Math.floor(gs.distance)}m`;
+    renderDailyScores(document.getElementById('winDailyList'));
+    document.getElementById('dailyWinOverlay').classList.add('visible');
   }
 
   renderer.render(scene, camera);
