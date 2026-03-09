@@ -2518,14 +2518,14 @@ function updateMiri(g, frame, jumping, crouching, jumpY, ridingScooter) {
     g.userData.torso.scale.set(1, 1, 1);
     if (g.userData.backpack) g.userData.backpack.forEach(m => { m.position.y = baseY; m.visible = true; });
 
-    g.userData.upperArms[0].position.set(-0.52, armRootY, 0);
-    g.userData.upperArms[1].position.set(0.52, armRootY, 0);
+    g.userData.upperArms[0].position.set(-0.42, armRootY, 0);
+    g.userData.upperArms[1].position.set(0.42, armRootY, 0);
     g.userData.thighs[0].position.set(-0.18, legRootY, 0);
     g.userData.thighs[1].position.set(0.18, legRootY, 0);
 
     // Running physics: arm/leg opposition (left leg forward = right arm forward)
-    const leftArmSwing = Math.sin(runPhase) * 0.85;
-    const rightArmSwing = Math.sin(runPhase + Math.PI) * 0.85;
+    const leftArmSwing = Math.sin(runPhase) * 0.55;
+    const rightArmSwing = Math.sin(runPhase + Math.PI) * 0.55;
     const leftLegSwing = Math.sin(runPhase + Math.PI) * 0.7;
     const rightLegSwing = Math.sin(runPhase) * 0.7;
 
@@ -2539,8 +2539,9 @@ function updateMiri(g, frame, jumping, crouching, jumpY, ridingScooter) {
     g.userData.thighs[1].rotation.x = rightLegSwing;
     g.userData.calves[1].rotation.x = 0.4 + rightLegSwing * 0.8;
 
-    g.userData.upperArms[0].rotation.z = -0.12;
-    g.userData.upperArms[1].rotation.z = 0.12;
+    g.userData.upperArms[0].rotation.z = -0.22;
+    g.userData.upperArms[1].rotation.z = 0.22;
+    g.userData.torso.rotation.z = Math.sin(runPhase) * 0.04;
     g.userData.thighs.forEach(t => t.visible = true);
   }
 
