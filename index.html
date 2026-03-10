@@ -3091,9 +3091,9 @@ function updateGame(dt) {
   if (gs.coinT > 55) { spawnCoins(); gs.coinT = 0; }
   gs.puT += fs;
   if (gs.puT > 220 + Math.random() * 180) { spawnPowerup(); gs.puT = 0; }
-  // Word hunt: spawn letters randomly throughout the run
+  // Word hunt: spawn letters only between 1000m and 10000m
   { const wh = gs.wordHunt;
-    if (!wh.done && wh.nextLetterIdx < wh.word.length) {
+    if (!wh.done && wh.nextLetterIdx < wh.word.length && gs.distance >= 1000 && gs.distance <= 10000) {
       wh.letterT += fs;
       if (wh.letterT > 400 + Math.random() * 400) { spawnNextLetter(); wh.letterT = 0; }
     }
@@ -3425,7 +3425,8 @@ function updateGame(dt) {
     for (let i = wh.letters.length - 1; i >= 0; i--) {
       const l = wh.letters[i];
       const relZ = l.z - gs.playerZ;
-      if (l.collected || relZ > 15) { scene.remove(l.mesh); wh.letters.splice(i, 1); continue; }
+      if (l.collected) { scene.remove(l.mesh); wh.letters.splice(i, 1); continue; }
+      if (relZ > 15) { scene.remove(l.mesh); wh.letters.splice(i, 1); wh.nextLetterIdx = l.idx; continue; }
       l.mesh.position.z = l.z;
       l.mesh.position.y = 1.5 + Math.sin(gs.frame * 0.08 + i) * 0.2;
       l.mesh.children[0].lookAt(camera.position);
