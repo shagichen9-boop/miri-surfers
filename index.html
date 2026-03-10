@@ -2930,7 +2930,7 @@ function handleKey(key) {
 
 function spawnObstacle() {
   const r = rng();
-  const type = r < 0.20 ? 'bibi' : r < 0.38 ? 'taxman' : r < 0.46 ? 'train' : r < 0.52 ? 'rabbi' : r < 0.57 ? 'protester' : r < 0.62 ? 'roadblock' : r < 0.68 ? 'barrier' : r < 0.74 ? 'gantz' : ['bus','oldman'][rng()*2|0];
+  const type = r < 0.20 ? 'bibi' : r < 0.38 ? 'taxman' : r < 0.46 ? 'train' : r < 0.52 ? 'rabbi' : r < 0.57 ? 'protester' : r < 0.62 ? 'roadblock' : r < 0.68 ? 'gantz' : ['bus','oldman'][rng()*2|0];
   const openLane = rng()*3|0;
   const lane = (type === 'train' || type === 'rabbi' || type === 'protester') ? 1
              : type === 'roadblock' ? openLane
@@ -2959,11 +2959,10 @@ function spawnObstacle() {
 
   if (type !== 'train' && gs.speed > TIERS[gs.tier].speedCap * 0.75 && rng() > TIERS[gs.tier].pairThresh) {
     const lane2 = [0,1,2].filter(l=>l!==lane)[rng()*2|0];
-    const obstTypes = ['bus','oldman','barrier'];
-    const type2 = obstTypes[rng()*3|0];
+    const obstTypes = ['bus','oldman'];
+    const type2 = obstTypes[rng()*2|0];
     let mesh2;
     if (type2==='bus') mesh2 = createBus(rng()*5|0);
-    else if (type2==='barrier') mesh2 = createPoliceBarrier();
     else mesh2 = createOldMan();
     mesh2.position.set(LANE_X[lane2], 0, gs.playerZ + SPAWN_Z);
     scene.add(mesh2);
