@@ -5,7 +5,7 @@
   "start_url": "/miri-surfers/",
   "scope": "/miri-surfers/",
   "display": "standalone",
-  "orientation": "landscape",
+  "orientation": "any",
   "background_color": "#0d0830",
   "theme_color": "#f5c500",
   "icons": [

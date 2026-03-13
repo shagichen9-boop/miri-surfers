@@ -36,6 +36,23 @@ body{background:#87CEEB;display:flex;justify-content:center;align-items:center;h
 #controls-hint{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.35);font-size:11px;z-index:5;pointer-events:none;text-align:center}
 @keyframes chaserPulse{from{opacity:0.6;transform:translate(-50%,-50%) scale(0.95)}to{opacity:1;transform:translate(-50%,-50%) scale(1.05)}}
 #stumbleOverlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:4;background:radial-gradient(ellipse at center,transparent 50%,rgba(255,0,0,0.35) 100%);display:none}
+
+/* Portrait mode touch buttons */
+#touchControls{display:none;position:absolute;bottom:0;left:0;right:0;height:160px;z-index:7;pointer-events:none}
+#touchLeft,#touchRight,#touchJump,#touchSlide{position:absolute;pointer-events:all;background:rgba(255,255,255,0.12);border:2px solid rgba(255,255,255,0.25);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+#touchLeft{left:8px;bottom:16px;width:90px;height:80px}
+#touchRight{left:106px;bottom:16px;width:90px;height:80px}
+#touchJump{right:106px;bottom:16px;width:90px;height:80px}
+#touchSlide{right:8px;bottom:16px;width:90px;height:80px}
+
+@media (max-width:600px) and (orientation:portrait){
+  .hud-nis{font-size:24px}
+  .hud-distance{font-size:18px}
+  .hud-multiplier{font-size:13px}
+  #hudBusPrice{top:auto;bottom:170px;font-size:13px;padding:5px 12px}
+  #controls-hint{display:none}
+  #touchControls{display:block}
+}
 </style>
 </head>
 <body>
@@ -82,6 +99,13 @@ body{background:#87CEEB;display:flex;justify-content:center;align-items:center;h
   <div id="hudChaserWarn" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:28px;font-weight:bold;color:#ff2222;text-shadow:0 0 20px #ff0000,0 0 40px #ff000088;pointer-events:none;z-index:6;animation:chaserPulse 0.5s infinite alternate">INSPECTOR IS CLOSE!</div>
   <div id="floatingTextContainer"></div>
   <div id="stumbleOverlay"></div>
+
+  <div id="touchControls">
+    <div id="touchLeft">&#x2190;</div>
+    <div id="touchRight">&#x2192;</div>
+    <div id="touchJump">&#x2191;</div>
+    <div id="touchSlide">&#x2193;</div>
+  </div>
 
   <div class="overlay visible" id="menuOverlay">
     <h1>&#x1F3C3; Miri Surfers</h1>
@@ -213,11 +237,16 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 document.getElementById('gameContainer').prepend(renderer.domElement);
 
-window.addEventListener('resize', () => {
+function isPortrait() { return window.innerHeight > window.innerWidth; }
+function updateCameraForOrientation() {
   camera.aspect = window.innerWidth / window.innerHeight;
+  camera.fov = isPortrait() ? 80 : 60;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
-});
+}
+window.addEventListener('resize', updateCameraForOrientation);
+window.addEventListener('orientationchange', updateCameraForOrientation);
+updateCameraForOrientation();
 
 const hemiLight = new THREE.HemisphereLight(0xb8d8ff, 0x886644, 0.9);
 scene.add(hemiLight);
@@ -876,9 +905,15 @@ function updateEnvironment(playerZ) {
   sun.position.z = playerZ - 60;
   sunGlow.position.z = playerZ - 60;
   sunGlow2.position.z = playerZ - 60;
-  camTarget.set(0, 8.5, playerZ+14);
-  camera.position.lerp(camTarget, 0.08);
-  camera.lookAt(0, 1, playerZ-28);
+  if (isPortrait()) {
+    camTarget.set(0, 14, playerZ + 6);
+    camera.position.lerp(camTarget, 0.08);
+    camera.lookAt(0, 0, playerZ - 18);
+  } else {
+    camTarget.set(0, 8.5, playerZ+14);
+    camera.position.lerp(camTarget, 0.08);
+    camera.lookAt(0, 1, playerZ-28);
+  }
 }
 
 // ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?
@@ -3041,9 +3076,15 @@ function resetGame() {
   }
 
   // Snap camera and ground back to start
-  camera.position.set(0, 8.5, 14);
-  camera.lookAt(0, 1, -28);
-  camTarget.set(0, 8.5, 14);
+  if (isPortrait()) {
+    camera.position.set(0, 14, 6);
+    camera.lookAt(0, 0, -18);
+    camTarget.set(0, 14, 6);
+  } else {
+    camera.position.set(0, 8.5, 14);
+    camera.lookAt(0, 1, -28);
+    camTarget.set(0, 8.5, 14);
+  }
   groundPlane.position.z = 0;
   sun.position.z = -60;
   sunGlow.position.z = -60;
@@ -4043,6 +4084,14 @@ document.addEventListener('keydown', e => {
       e.preventDefault();
     }
   }
+});
+
+// On-screen touch buttons for portrait mode
+['touchLeft','touchRight','touchJump','touchSlide'].forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const keyMap = {touchLeft:'ArrowLeft',touchRight:'ArrowRight',touchJump:'ArrowUp',touchSlide:'ArrowDown'};
+  el.addEventListener('touchstart', e => { e.preventDefault(); handleKey(keyMap[id]); }, {passive:false});
 });
 
 let touchSX=0, touchSY=0;
