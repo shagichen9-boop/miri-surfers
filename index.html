@@ -3015,7 +3015,7 @@ const gs = {
   state:'menu', speed:0.15, frame:0, nis:0, totalNis:0, distance:0, tier:0, dailyMode:false, _rng:null,
   busPrice:BASE_BUS_PRICE, multiplier:1, multTimer:0, magnetTimer:0, scooterTimer:0, trumpTimer:0, giyusFreezeTimer:0, slowMotionTimer:0, shieldActive:false,
   playerLane:1, playerX:0, targetX:0,
-  jumping:false, jumpVel:0, jumpY:0,
+  jumping:false, jumpVel:0, jumpY:0, doubleJumped:false,
   crouching:false, crouchTimer:0,
   obstacles:[], coins:[], powerups:[], bullets:[], taxLetters:[],
   taxmanNearby:false, taxmanX:0,
@@ -3103,8 +3103,16 @@ function handleKey(key) {
   const k = key.toLowerCase();
   if (k==='arrowleft'||k==='a') { gs.playerLane = Math.max(0, gs.playerLane-1); gs.targetX = LANE_X[gs.playerLane]; }
   else if (k==='arrowright'||k==='d') { gs.playerLane = Math.min(2, gs.playerLane+1); gs.targetX = LANE_X[gs.playerLane]; }
-  else if (k==='arrowup'||k==='w'||k===' ') { if (!gs.jumping && gs.scooterTimer <= 0) { gs.jumping=true; gs.jumpVel=JUMP_FORCE; playSound('jump'); } }
-  else if (k==='arrowdown'||k==='s') { if (!gs.jumping && gs.scooterTimer <= 0) { gs.crouching=true; gs.crouchTimer=CROUCH_DUR; playSound('slide'); } }
+  else if (k==='arrowup'||k==='w'||k===' ') {
+    if (gs.scooterTimer > 0) return;
+    if (!gs.jumping) { gs.jumping=true; gs.jumpVel=JUMP_FORCE; gs.doubleJumped=false; playSound('jump'); }
+    else if (!gs.doubleJumped) { gs.jumpVel=JUMP_FORCE*0.85; gs.doubleJumped=true; addFloatingText('DOUBLE JUMP!','#00ccff'); playSound('jump'); }
+  }
+  else if (k==='arrowdown'||k==='s') {
+    if (gs.scooterTimer > 0) return;
+    if (gs.jumping) { gs.jumpVel = -JUMP_FORCE * 1.2; addFloatingText('SLAM!','#ff8800'); playSound('slide'); } // mid-air slam
+    else { gs.crouching=true; gs.crouchTimer=CROUCH_DUR; playSound('slide'); }
+  }
 }
 
 function createMordechaiDavid() {
@@ -3424,7 +3432,7 @@ function updateGame(dt) {
   if (gs.jumping) {
     gs.jumpVel -= GRAVITY * fs;
     gs.jumpY += gs.jumpVel * fs;
-    if (gs.jumpY <= 0) { gs.jumpY=0; gs.jumpVel=0; gs.jumping=false; }
+    if (gs.jumpY <= 0) { gs.jumpY=0; gs.jumpVel=0; gs.jumping=false; gs.doubleJumped=false; }
   }
   if (gs.crouching) { gs.crouchTimer -= fs; if (gs.crouchTimer <= 0) { gs.crouchTimer=0; gs.crouching=false; } }
   if (gs.multTimer > 0) { gs.multTimer -= dt; if (gs.multTimer <= 0) { gs.multTimer=0; gs.multiplier=1; } }
