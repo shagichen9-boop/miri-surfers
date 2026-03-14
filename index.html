@@ -4082,7 +4082,7 @@ document.getElementById('btnTryAgain').onclick = () => {
 
 document.addEventListener('keydown', e => {
   if (gs.state === 'playing') {
-    handleKey(e.key);
+    if (!e.repeat) handleKey(e.key);
     e.preventDefault();
   } else if (gs.state === 'menu' || gs.state === 'dead') {
     if (e.key === 'Enter' || e.key === ' ') {
