@@ -4288,8 +4288,24 @@ if (new URLSearchParams(location.search).has('design')) {
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/miri-surfers/service-worker.js')
-      .catch(() => navigator.serviceWorker.register('service-worker.js'));
+    const swUrl = '/miri-surfers/service-worker.js';
+    navigator.serviceWorker.register(swUrl).then(reg => {
+      reg.addEventListener('updatefound', () => {
+        const newSW = reg.installing;
+        newSW.addEventListener('statechange', () => {
+          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+            // New version ready — tell it to take over and reload
+            newSW.postMessage('skipWaiting');
+          }
+        });
+      });
+    }).catch(() => navigator.serviceWorker.register('service-worker.js'));
+
+    // When SW takes control, reload once to get fresh content
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) { refreshing = true; window.location.reload(); }
+    });
   });
 }
 </script>
