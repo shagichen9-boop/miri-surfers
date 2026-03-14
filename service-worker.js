@@ -1,4 +1,4 @@
-const CACHE = 'miri-surfers-v1';
+const CACHE = 'miri-surfers-v2';
 const ASSETS = [
   '/miri-surfers/',
   '/miri-surfers/index.html',
