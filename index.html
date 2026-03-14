@@ -3106,7 +3106,6 @@ function handleKey(key) {
   else if (k==='arrowup'||k==='w'||k===' ') {
     if (gs.scooterTimer > 0) return;
     if (!gs.jumping) { gs.jumping=true; gs.jumpVel=JUMP_FORCE; gs.doubleJumped=false; playSound('jump'); }
-    else if (!gs.doubleJumped) { gs.jumpVel=JUMP_FORCE*0.85; gs.doubleJumped=true; addFloatingText('DOUBLE JUMP!','#00ccff'); playSound('jump'); }
   }
   else if (k==='arrowdown'||k==='s') {
     if (gs.scooterTimer > 0) return;
