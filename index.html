@@ -3109,7 +3109,7 @@ function handleKey(key) {
   }
   else if (k==='arrowdown'||k==='s') {
     if (gs.scooterTimer > 0) return;
-    if (gs.jumping) { gs.jumpVel = -JUMP_FORCE * 1.2; addFloatingText('SLAM!','#ff8800'); playSound('slide'); } // mid-air slam
+    if (gs.jumping) { gs.jumpVel = -JUMP_FORCE * 1.2; gs._slamming = true; addFloatingText('SLAM!','#ff8800'); playSound('slide'); } // mid-air slam → land sliding
     else { gs.crouching=true; gs.crouchTimer=CROUCH_DUR; playSound('slide'); }
   }
 }
@@ -3431,7 +3431,7 @@ function updateGame(dt) {
   if (gs.jumping) {
     gs.jumpVel -= GRAVITY * fs;
     gs.jumpY += gs.jumpVel * fs;
-    if (gs.jumpY <= 0) { gs.jumpY=0; gs.jumpVel=0; gs.jumping=false; gs.doubleJumped=false; }
+    if (gs.jumpY <= 0) { gs.jumpY=0; gs.jumpVel=0; gs.jumping=false; gs.doubleJumped=false; if (gs._slamming) { gs.crouching=true; gs.crouchTimer=CROUCH_DUR; gs._slamming=false; } }
   }
   if (gs.crouching) { gs.crouchTimer -= fs; if (gs.crouchTimer <= 0) { gs.crouchTimer=0; gs.crouching=false; } }
   if (gs.multTimer > 0) { gs.multTimer -= dt; if (gs.multTimer <= 0) { gs.multTimer=0; gs.multiplier=1; } }
