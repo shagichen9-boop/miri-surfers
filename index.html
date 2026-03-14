@@ -3922,6 +3922,7 @@ function showTzavOverlay() {
 }
 
 function addFloatingText(text, color) {
+  if (window.matchMedia('(pointer: coarse)').matches) return; // hide on mobile
   const el = document.createElement('div');
   el.textContent = text;
   el.style.cssText = `position:absolute;left:50%;top:45%;transform:translate(-50%,-50%);color:${color};font-size:22px;font-weight:bold;text-shadow:0 0 12px ${color}40;pointer-events:none;white-space:nowrap`;
