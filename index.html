@@ -2823,11 +2823,7 @@ function playSound(type) {
       g.gain.setValueAtTime(0.06, now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
       o.connect(g); o.start(now); o.stop(now + 0.18);
     } else if (type === 'slide') {
-      const o = ac.createOscillator(); o.type = 'sawtooth';
-      o.frequency.setValueAtTime(400, now);
-      o.frequency.exponentialRampToValueAtTime(180, now + 0.14);
-      g.gain.setValueAtTime(0.04, now); g.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
-      o.connect(g); o.start(now); o.stop(now + 0.16);
+      // silent
     } else if (type === 'stumble') {
       const o = ac.createOscillator(); o.type = 'square';
       o.frequency.setValueAtTime(220, now);
