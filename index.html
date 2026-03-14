@@ -3466,7 +3466,7 @@ function updateGame(dt) {
       o.z += (gs.speed * 1.5 + 0.42) * fs;
     }
     if (o.type === 'gantz') {
-      o.z += (gs.speed * 1.2 + 0.34) * fs;
+      o.z += (gs.speed * 1.5 + 0.42) * fs;
     }
     const relZ = o.z - gs.playerZ;
     if (relZ > 15) { scene.remove(o.mesh); gs.obstacles.splice(i, 1); continue; }
