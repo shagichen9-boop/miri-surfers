@@ -4,7 +4,7 @@
   "description": "The endless political runner game",
   "start_url": "/miri-surfers/",
   "scope": "/miri-surfers/",
-  "display": "standalone",
+  "display": "fullscreen",
   "orientation": "any",
   "background_color": "#0d0830",
   "theme_color": "#f5c500",
