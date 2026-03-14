@@ -3997,7 +3997,13 @@ document.getElementById('dailyDateLabel').textContent =
   `${_today.getDate()}/${_today.getMonth()+1}/${_today.getFullYear()} \u2014 same seed for everyone!`;
 document.getElementById('dailyGoalLabel').textContent = `\uD83C\uDFC1 Today's goal: ${getDailyGoal().toLocaleString()}m`;
 
+function requestFullscreen() {
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+  if (req) req.call(el).catch(() => {});
+}
 document.getElementById('btnStart').onclick = () => {
+  requestFullscreen();
   _ac();
   gs.dailyMode = false; gs._rng = null;
   resetGame();
@@ -4030,6 +4036,7 @@ document.getElementById('btnWinMenu').onclick = () => {
 };
 
 document.getElementById('btnTryAgain').onclick = () => {
+  requestFullscreen();
   const wasDaily = gs.dailyMode;
   if (wasDaily) { gs.dailyMode = true; gs._rng = mulberry32(todaySeed()); }
   resetGame();
