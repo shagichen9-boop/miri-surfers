@@ -2805,6 +2805,7 @@ function _ac() {
   return _audioCtx;
 }
 function playSound(type) {
+  return; // sounds disabled
   try {
     const ac = _ac();
     const now = ac.currentTime;
@@ -2875,6 +2876,7 @@ let _bgMusicGain = null;
 let _bgMusicPlaying = false;
 
 function startBgMusic() {
+  return; // music disabled
   try {
     stopBgMusic();
     const ac = _ac();
