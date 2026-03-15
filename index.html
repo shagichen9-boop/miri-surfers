@@ -4279,6 +4279,15 @@ document.addEventListener('visibilitychange', () => {
     _audioCtx.resume();
   }
 });
+window.addEventListener('pagehide', () => {
+  if (_audioCtx) _audioCtx.suspend();
+});
+window.addEventListener('blur', () => {
+  if (_audioCtx) _audioCtx.suspend();
+});
+window.addEventListener('focus', () => {
+  if (_audioCtx) _audioCtx.resume();
+});
 </script>
 </body>
 </html>
