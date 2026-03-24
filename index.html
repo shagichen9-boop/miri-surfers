@@ -3210,6 +3210,8 @@ const gs = {
   warnSounded:false,
   testTaxmanSpawned:false,
   deriKeySpawned:false, deriJailSpawned:false, hasKey:false,
+  deriKeyDist: 3000 + Math.random()*5000,
+  deriJailOffset: 1500 + Math.random()*1000,
   cityZone:-1,
   wordHunt:{ word:'', collected:[], nextLetterIdx:0, done:false, letters:[], letterT:0 },
 };
@@ -3236,6 +3238,8 @@ function resetGame() {
     warnSounded:false,
     testTaxmanSpawned:false,
     deriKeySpawned:false, deriJailSpawned:false, hasKey:false,
+    deriKeyDist: 3000 + Math.random()*5000,
+    deriJailOffset: 1500 + Math.random()*1000,
     cityZone:-1,
     wordHunt:{ word:_newWord, collected:Array(_newWord.length).fill(false), nextLetterIdx:0, done:false, letters:[], letterT:0 },
   });
@@ -3632,7 +3636,7 @@ function updateGame(dt) {
     if (nz !== gs.cityZone) { gs.cityZone=nz; applyCityTheme(nz, nz>0); }
   }
   // One-time Deri key + jail spawns
-  if (!gs.deriKeySpawned && gs.distance > 800) {
+  if (!gs.deriKeySpawned && gs.distance > gs.deriKeyDist) {
     gs.deriKeySpawned = true;
     const kLane = rng()*3|0;
     const km = createKeyMesh(); km.scale.setScalar(0.9);
@@ -3641,12 +3645,9 @@ function updateGame(dt) {
     scene.add(kg);
     gs.powerups.push({type:'deriKey', lane:kLane, z:gs.playerZ+SPAWN_Z, mesh:kg, collected:false});
   }
-  if (!gs.deriJailSpawned && gs.distance > 2000) {
+  if (!gs.deriJailSpawned && gs.distance > gs.deriKeyDist + gs.deriJailOffset) {
     gs.deriJailSpawned = true;
-    gs.obstacles.forEach(o => scene.remove(o.mesh));
-    gs.obstacles = [];
-    gs.spawnT = -500;
-    const jLane = rng()*3|0;
+    const jLane = Math.floor(Math.random() * 3);
     const jm = createDeriJailMesh();
     jm.position.set(LANE_X[jLane], 0, gs.playerZ + SPAWN_Z);
     scene.add(jm);
@@ -3845,7 +3846,7 @@ function updateGame(dt) {
       }
     }
 
-    const inLane = (o.type === 'train' || o.type === 'rabbi' || o.type === 'protester') ? true
+    const inLane = (o.type === 'train' || o.type === 'rabbi' || o.type === 'protester' || o.type === 'smotrich') ? true
                  : o.type === 'roadblock' ? o.lane !== gs.playerLane
                  : o.lane === gs.playerLane;
 
