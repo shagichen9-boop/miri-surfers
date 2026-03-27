@@ -105,7 +105,12 @@ body{background:#000;display:flex;justify-content:center;align-items:center;heig
     <h1>&#x1F3C3; Miri Surfers</h1>
     <h2>3D NIS Rush Edition</h2>
     <button id="btnStart">START</button>
-    <button id="btnDaily" style="margin-top:8px;padding:14px 40px;font-size:20px;background:linear-gradient(135deg,#aa6600,#ffaa00);border:none;border-radius:35px;color:#fff;font-weight:bold;cursor:pointer;letter-spacing:2px">&#x1F4C5; DAILY CHALLENGE</button>
+    <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap;justify-content:center">
+      <button id="btnGhostRun" style="padding:14px 28px;font-size:18px;background:linear-gradient(135deg,#330066,#8800cc);border:none;border-radius:35px;color:#fff;font-weight:bold;cursor:pointer;letter-spacing:1px;opacity:0.5" title="Play a run first to unlock Ghost Run">&#x1F47B; GHOST RUN</button>
+      <button id="btnChooseChar" style="padding:14px 28px;font-size:18px;background:linear-gradient(135deg,#004422,#00aa44);border:none;border-radius:35px;color:#fff;font-weight:bold;cursor:pointer;letter-spacing:1px">&#x1F464; CHARACTER</button>
+      <button id="btnDaily" style="padding:14px 28px;font-size:18px;background:linear-gradient(135deg,#aa6600,#ffaa00);border:none;border-radius:35px;color:#fff;font-weight:bold;cursor:pointer;letter-spacing:1px">&#x1F4C5; DAILY</button>
+    </div>
+    <div id="selectedCharLabel" style="font-size:13px;color:#88ffaa;margin-top:6px;font-weight:bold">Playing as: Miri</div>
     <div id="dailyDateLabel" style="font-size:12px;color:#ffcc88;margin-top:4px"></div>
     <div id="dailyGoalLabel" style="font-size:13px;color:#ffdd00;font-weight:bold;margin-top:2px"></div>
     <div style="display:flex;gap:24px;margin-top:12px;font-size:13px;color:#fff;text-align:center">
@@ -155,6 +160,28 @@ body{background:#000;display:flex;justify-content:center;align-items:center;heig
       <ol id="winDailyList" style="margin:0;padding-left:22px;line-height:1.8;color:#ccc"></ol>
     </div>
     <button id="btnWinMenu" style="background:linear-gradient(135deg,#aa6600,#ffaa00);border:none;border-radius:35px;color:#fff;font-weight:bold;font-size:20px;padding:14px 40px;cursor:pointer">&#x05D7;&#x05D6;&#x05D5;&#x05E8; &#x05DC;&#x05EA;&#x05E4;&#x05E8;&#x05D9;&#x05D8;</button>
+  </div>
+
+  <div class="overlay" id="charSelectOverlay">
+    <h1 style="font-size:38px">&#x1F464; CHOOSE CHARACTER</h1>
+    <div style="display:flex;gap:18px;margin:20px 0;flex-wrap:wrap;justify-content:center">
+      <div id="charCardMiri" onclick="selectChar('miri')" style="cursor:pointer;text-align:center;padding:14px 18px;border-radius:18px;background:rgba(255,255,255,0.08);border:3px solid gold;transition:all 0.2s;min-width:90px">
+        <canvas id="charFaceMiri" width="80" height="80" style="border-radius:50%;display:block;margin:0 auto 8px"></canvas>
+        <div style="color:#FFD700;font-weight:bold;font-size:15px">Miri</div>
+        <div style="color:#aaa;font-size:11px">Runner</div>
+      </div>
+      <div id="charCardLapid" onclick="selectChar('lapid')" style="cursor:pointer;text-align:center;padding:14px 18px;border-radius:18px;background:rgba(255,255,255,0.08);border:3px solid #555;transition:all 0.2s;min-width:90px">
+        <canvas id="charFaceLapid" width="80" height="80" style="border-radius:50%;display:block;margin:0 auto 8px"></canvas>
+        <div style="color:#87CEEB;font-weight:bold;font-size:15px">Lapid</div>
+        <div style="color:#aaa;font-size:11px">Opposition</div>
+      </div>
+      <div id="charCardBengvir" onclick="selectChar('bengvir')" style="cursor:pointer;text-align:center;padding:14px 18px;border-radius:18px;background:rgba(255,255,255,0.08);border:3px solid #555;transition:all 0.2s;min-width:90px">
+        <canvas id="charFaceBengvir" width="80" height="80" style="border-radius:50%;display:block;margin:0 auto 8px"></canvas>
+        <div style="color:#ff8844;font-weight:bold;font-size:15px">Ben-Gvir</div>
+        <div style="color:#aaa;font-size:11px">Minister</div>
+      </div>
+    </div>
+    <button id="btnCharBack" style="padding:14px 40px;font-size:20px;background:linear-gradient(135deg,#333,#555);border:none;border-radius:35px;color:#fff;font-weight:bold;cursor:pointer">BACK</button>
   </div>
 
   <div id="hudWordHunt" style="display:none;position:absolute;top:55px;right:10px;background:rgba(0,0,0,0.6);border:2px solid #ffcc00;border-radius:10px;padding:6px 12px;z-index:5;pointer-events:none;text-align:center">
