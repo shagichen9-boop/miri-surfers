@@ -3380,8 +3380,11 @@ function createMordechaiDavid() {
   return g;
 }
 
-function createSmotrich() {
+function createSmotrich(openLane) {
+  // openLane: 0=left free, 2=right free (board covers the other 2 lanes)
+  if (openLane === undefined) openLane = rng() < 0.5 ? 0 : 2;
   const g = new THREE.Group();
+  g.userData.smotrichOpenLane = openLane;
   const suitMat  = new THREE.MeshStandardMaterial({ color: 0x1a1a2e, roughness: 0.65 });
   const shirtMat = new THREE.MeshStandardMaterial({ color: 0xf5f5f5, roughness: 0.5 });
   const skinMat  = new THREE.MeshStandardMaterial({ color: 0xe0b090, roughness: 0.7 });
@@ -3399,36 +3402,43 @@ function createSmotrich() {
   bctx.font='27px "Courier New",monospace'; bctx.textAlign='left';
   vocab.forEach((line,i)=>bctx.fillText(line,40,100+i*54));
   const boardTex = new THREE.CanvasTexture(boardC);
-  const board = new THREE.Mesh(new THREE.BoxGeometry(8.5,3.0,0.12),[
+  // Board covers 2 lanes; openLane=0 → board over lanes 1&2 (center x=+1.5)
+  //                         openLane=2 → board over lanes 0&1 (center x=-1.5)
+  const boardCx = openLane === 0 ? 1.5 : -1.5;
+  const board = new THREE.Mesh(new THREE.BoxGeometry(5.5,3.0,0.12),[
     new THREE.MeshStandardMaterial({color:0x8b5e2a}), new THREE.MeshStandardMaterial({color:0x8b5e2a}),
     new THREE.MeshStandardMaterial({color:0x8b5e2a}), new THREE.MeshStandardMaterial({color:0x8b5e2a}),
     new THREE.MeshBasicMaterial({map:boardTex}),       new THREE.MeshStandardMaterial({color:0x8b5e2a})
   ]);
-  board.position.set(0, 3.5, 0); g.add(board);
-  for (const lx of [-3.9, 3.9]) {
+  board.position.set(boardCx, 3.5, 0); g.add(board);
+  // Legs at edges of the board
+  const legL = boardCx - 2.5, legR = boardCx + 2.5;
+  for (const lx of [legL, legR]) {
     const leg = new THREE.Mesh(new THREE.BoxGeometry(0.12,2.1,0.12), stickMat);
     leg.position.set(lx, 1.0, 0); g.add(leg);
   }
-  for (const lx of [-0.2, 0.2]) {
+  // Smotrich body always in the middle of board
+  for (const lx of [boardCx - 0.2, boardCx + 0.2]) {
     const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.11,1.2,8), suitMat);
     leg.position.set(lx, 0.6, 0); g.add(leg);
     const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.22,0.13,0.38), shoeMat);
     shoe.position.set(lx, 0.06, 0.07); g.add(shoe);
   }
+  const bx = boardCx; // all body parts offset to board center
   const torso = new THREE.Mesh(new THREE.BoxGeometry(0.88,1.15,0.42), suitMat);
-  torso.position.y = 1.78; g.add(torso);
+  torso.position.set(bx, 1.78, 0); g.add(torso);
   const shirt = new THREE.Mesh(new THREE.BoxGeometry(0.3,0.7,0.44), shirtMat);
-  shirt.position.set(0, 1.82, 0.18); g.add(shirt);
+  shirt.position.set(bx, 1.82, 0.18); g.add(shirt);
   const rArm = new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.08,0.9,8), suitMat);
-  rArm.rotation.z = 0.7; rArm.position.set(-0.62, 2.2, 0); g.add(rArm);
+  rArm.rotation.z = 0.7; rArm.position.set(bx-0.62, 2.2, 0); g.add(rArm);
   const rHand = new THREE.Mesh(new THREE.SphereGeometry(0.10,8,8), skinMat);
-  rHand.position.set(-0.98, 2.6, 0); g.add(rHand);
+  rHand.position.set(bx-0.98, 2.6, 0); g.add(rHand);
   const pointer = new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.018,2.2,7), stickMat);
-  pointer.rotation.z = -0.5; pointer.position.set(-0.7, 3.0, 0); g.add(pointer);
+  pointer.rotation.z = -0.5; pointer.position.set(bx-0.7, 3.0, 0); g.add(pointer);
   const lArm = new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.08,0.85,8), suitMat);
-  lArm.rotation.z = -0.18; lArm.position.set(0.50, 1.72, 0); g.add(lArm);
+  lArm.rotation.z = -0.18; lArm.position.set(bx+0.50, 1.72, 0); g.add(lArm);
   const lHand = new THREE.Mesh(new THREE.SphereGeometry(0.10,8,8), skinMat);
-  lHand.position.set(0.56, 1.28, 0); g.add(lHand);
+  lHand.position.set(bx+0.56, 1.28, 0); g.add(lHand);
   const smFaceC = document.createElement('canvas'); smFaceC.width = 512; smFaceC.height = 512;
   const smCtx = smFaceC.getContext('2d');
   const smTex = new THREE.CanvasTexture(smFaceC);
@@ -3448,10 +3458,10 @@ function createSmotrich() {
   drawSMFace(); smImg.onload = drawSMFace; smImg.onerror = drawSMFace; smImg.src = IMG_SMOTRICH;
   const smHead = new THREE.Mesh(new THREE.CircleGeometry(0.82,32),
     new THREE.MeshBasicMaterial({map:smTex, transparent:true, side:THREE.DoubleSide}));
-  smHead.position.set(0, 3.05, 0.4); g.add(smHead);
+  smHead.position.set(bx, 3.05, 0.4); g.add(smHead);
   const kippah = new THREE.Mesh(new THREE.SphereGeometry(0.44,12,6,0,Math.PI*2,0,Math.PI/2.5),
     new THREE.MeshStandardMaterial({color:0x1a1a2e, roughness:0.7}));
-  kippah.position.set(0, 3.62, 0.4); g.add(kippah);
+  kippah.position.set(bx, 3.62, 0.4); g.add(kippah);
   // 2 small children sitting in front
   const childSkinMat = new THREE.MeshStandardMaterial({color: 0xe0b090, roughness: 0.7});
   const childShirtColors = [0x3355cc, 0xcc3322];
@@ -3588,9 +3598,10 @@ function spawnObstacle() {
   const r = rng();
   const type = r < 0.08 ? 'bibi' : r < 0.16 ? 'taxman' : r < 0.24 ? 'train' : r < 0.32 ? 'rabbi' : r < 0.40 ? 'protester' : r < 0.48 ? 'mordechai' : r < 0.56 ? 'smotrich' : r < 0.64 ? 'roadblock' : r < 0.72 ? 'gantz' : r < 0.80 ? 'pnina' : ['bus','oldman'][rng()*2|0];
   const openLane = rng()*3|0;
+  const smotrichOpen = rng() < 0.5 ? 0 : 2; // open lane for smotrich (left or right)
   const lane = (type === 'train' || type === 'rabbi' || type === 'protester') ? 1
              : type === 'roadblock' ? openLane
-             : type === 'smotrich' ? 1
+             : type === 'smotrich' ? 1  // group always at center, board offset internally
              : rng()*3|0;
   const colorIdx = rng()*5|0;
   let mesh;
@@ -3605,13 +3616,14 @@ function spawnObstacle() {
   else if (type==='protester') mesh = createProtesterRoadblock();
   else if (type==='roadblock') mesh = createRoadblock(openLane);
   else if (type==='mordechai') mesh = createMordechaiDavid();
-  else if (type==='smotrich') mesh = createSmotrich();
+  else if (type==='smotrich') mesh = createSmotrich(smotrichOpen);
   else if (type==='pnina') { mesh = createPninaObstacleMesh(); mesh.rotation.y = 0; }
   else mesh = createSign();
   const spawnY = type === 'pnina' ? 14 : 0;
   mesh.position.set((type === 'protester' || type === 'roadblock') ? 0 : LANE_X[lane], spawnY, gs.playerZ + SPAWN_Z);
   scene.add(mesh);
   gs.obstacles.push({type, lane, z: gs.playerZ + SPAWN_Z, mesh, colorIdx,
+    smotrichOpen: type === 'smotrich' ? smotrichOpen : undefined,
     fired: type === 'oldman' ? false : undefined,
     letterFired: type === 'taxman' ? false : undefined,
     priceBumped: type === 'taxman' ? false : undefined,
@@ -3977,7 +3989,8 @@ function updateGame(dt) {
       }
     }
 
-    const inLane = (o.type === 'train' || o.type === 'rabbi' || o.type === 'protester' || o.type === 'smotrich' || o.type === 'pnina') ? true
+    const inLane = (o.type === 'train' || o.type === 'rabbi' || o.type === 'protester' || o.type === 'pnina') ? true
+                 : o.type === 'smotrich' ? gs.playerLane !== o.smotrichOpen  // safe only in open lane
                  : o.type === 'roadblock' ? o.lane !== gs.playerLane
                  : o.lane === gs.playerLane;
 
@@ -3995,7 +4008,7 @@ function updateGame(dt) {
       else if (o.type === 'protester') hit = gs.jumpY <= 1.8;
       else if (o.type === 'roadblock') hit = true; // wrong lane = always hit
       else if (o.type === 'mordechai') hit = !gs.crouching; // slide under his palm
-      else if (o.type === 'smotrich') hit = !gs.crouching;  // slide under the board
+      else if (o.type === 'smotrich') hit = !gs.crouching;  // in covered lane: must slide under
       else if (o.type === 'pnina') hit = !gs.crouching;    // slide under the swooping lion
       else if (o.type === 'banana') hit = gs.jumpY < 0.5;   // must jump over the peel
       else if (o.type === 'deriJail') {
@@ -4480,7 +4493,7 @@ function loop() {
   if (window.__DESIGN_MODE__) return;
   window._loopId = requestAnimationFrame(loop);
   const now = performance.now();
-  const dt = Math.min(now - lastTime, 33); // cap at ~30fps floor to prevent jumps
+  const dt = now - lastTime;
   lastTime = now;
 
   if (gs.state === 'playing') {
