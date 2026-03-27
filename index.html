@@ -4000,7 +4000,7 @@ function updateGame(dt) {
       o.mesh.userData.arrowMesh.material.opacity = 0.55 + Math.abs(Math.sin(gs.frame * 0.18)) * 0.45;
     }
 
-    const inLane = (o.type === 'train' || o.type === 'rabbi' || o.type === 'protester' || o.type === 'pnina') ? true
+    const inLane = (o.type === 'train' || o.type === 'rabbi' || o.type === 'protester') ? true
                  : o.type === 'smotrich' ? gs.playerLane !== o.smotrichOpen  // safe only in open lane
                  : o.type === 'roadblock' ? o.lane !== gs.playerLane
                  : o.lane === gs.playerLane;
