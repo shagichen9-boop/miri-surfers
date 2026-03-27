@@ -1112,27 +1112,28 @@
     const arrow2 = new THREE.Mesh(new THREE.PlaneGeometry(1.6,1.6), new THREE.MeshBasicMaterial({map:arrowTex2,transparent:true,depthWrite:false}));
     arrow2.rotation.x = -Math.PI/2; arrow2.position.set(-3, 0.05, 1.5); g.add(arrow2);
 
-    // ── Smotrich body — centered on board ──────────────────────────────────
-    for (const lx of [dbx-0.2, dbx+0.2]) {
+    // ── Smotrich body — at RIGHT edge of board (clear slide path in center) ──
+    const sx = dbx + 1.9; // right edge of board
+    for (const lx of [sx-0.2, sx+0.2]) {
       const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.11, 1.2, 8), suitMat);
       leg.position.set(lx, 0.6, 0); g.add(leg);
       const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.13, 0.38), shoeMat);
       shoe.position.set(lx, 0.06, 0.07); g.add(shoe);
     }
     const torso = new THREE.Mesh(new THREE.BoxGeometry(0.88, 1.15, 0.42), suitMat);
-    torso.position.set(dbx, 1.78, 0); g.add(torso);
+    torso.position.set(sx, 1.78, 0); g.add(torso);
     const shirt = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.7, 0.44), shirtMat);
-    shirt.position.set(dbx, 1.82, 0.18); g.add(shirt);
+    shirt.position.set(sx, 1.82, 0.18); g.add(shirt);
     const rArm = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.08, 0.9, 8), suitMat);
-    rArm.rotation.z = 0.7; rArm.position.set(dbx-0.62, 2.2, 0); g.add(rArm);
+    rArm.rotation.z = 0.7; rArm.position.set(sx-0.62, 2.2, 0); g.add(rArm);
     const rHand = new THREE.Mesh(new THREE.SphereGeometry(0.10, 8, 8), skinMat);
-    rHand.position.set(dbx-0.98, 2.6, 0); g.add(rHand);
+    rHand.position.set(sx-0.98, 2.6, 0); g.add(rHand);
     const pointer = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.018, 2.2, 7), stickMat);
-    pointer.rotation.z = -0.5; pointer.position.set(dbx-0.7, 3.0, 0); g.add(pointer);
+    pointer.rotation.z = -0.5; pointer.position.set(sx-0.7, 3.0, 0); g.add(pointer);
     const lArm = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.08, 0.85, 8), suitMat);
-    lArm.rotation.z = -0.18; lArm.position.set(dbx+0.50, 1.72, 0); g.add(lArm);
+    lArm.rotation.z = -0.18; lArm.position.set(sx+0.50, 1.72, 0); g.add(lArm);
     const lHand = new THREE.Mesh(new THREE.SphereGeometry(0.10, 8, 8), skinMat);
-    lHand.position.set(dbx+0.56, 1.28, 0); g.add(lHand);
+    lHand.position.set(sx+0.56, 1.28, 0); g.add(lHand);
     // Head — photo face
     const smFaceC = document.createElement('canvas'); smFaceC.width = 512; smFaceC.height = 512;
     const smCtx = smFaceC.getContext('2d');
@@ -1160,27 +1161,25 @@
     drawSMFace(); smImg.onload = drawSMFace; smImg.onerror = drawSMFace; smImg.src = IMG_SMOTRICH;
     const smHead = new THREE.Mesh(new THREE.CircleGeometry(0.82, 32),
       new THREE.MeshBasicMaterial({map: smTex, transparent:true, side: THREE.DoubleSide}));
-    smHead.position.set(dbx, 3.05, 0.4); g.add(smHead);
+    smHead.position.set(sx, 3.05, 0.4); g.add(smHead);
     const kippahMat = new THREE.MeshStandardMaterial({color: 0x1a1a2e, roughness: 0.7});
     const kippah = new THREE.Mesh(new THREE.SphereGeometry(0.44, 12, 6, 0, Math.PI*2, 0, Math.PI/2.5), kippahMat);
-    kippah.position.set(dbx, 3.62, 0.4); g.add(kippah);
+    kippah.position.set(sx, 3.62, 0.4); g.add(kippah);
 
-    // ── 2 small children sitting in front ──────────────────────────────────
+    // ── 2 small children — in front of Smotrich ──────────────────────────────
     const childSkinMat = new THREE.MeshStandardMaterial({color: 0xe0b090, roughness: 0.7});
     const childShirtColors = [0x3355cc, 0xcc3322];
-    for (const [ci, cx] of [[-3.8, 0], [-2.8, 1]]) {
-      const shirtC = new THREE.MeshStandardMaterial({color: childShirtColors[ci === -3.8 ? 0 : 1], roughness: 0.6});
-      // Sitting body
+    for (const [ci, cOff] of [[0, -0.45], [1, 0.45]]) {
+      const cx = sx + cOff;
+      const shirtC = new THREE.MeshStandardMaterial({color: childShirtColors[ci], roughness: 0.6});
       const body = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.52, 0.28), shirtC);
-      body.position.set(cx, 0.6, 1.2); g.add(body);
-      // Head
+      body.position.set(cx, 0.6, 1.8); g.add(body);
       const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), childSkinMat);
-      head.position.set(cx, 1.02, 1.2); g.add(head);
-      // Legs (folded, sitting)
+      head.position.set(cx, 1.02, 1.8); g.add(head);
       const legL = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.12, 0.38), shirtC);
-      legL.position.set(cx - 0.1, 0.3, 1.38); g.add(legL);
+      legL.position.set(cx - 0.1, 0.3, 1.96); g.add(legL);
       const legR = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.12, 0.38), shirtC);
-      legR.position.set(cx + 0.1, 0.3, 1.38); g.add(legR);
+      legR.position.set(cx + 0.1, 0.3, 1.96); g.add(legR);
     }
 
     return g;
