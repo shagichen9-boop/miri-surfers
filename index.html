@@ -224,9 +224,10 @@ const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHei
 camera.position.set(0, 7, 10);
 camera.lookAt(0, 1, -20);
 
-const renderer = new THREE.WebGLRenderer({antialias:true});
+const renderer = new THREE.WebGLRenderer({antialias:true, powerPreference:'high-performance'});
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.domElement.style.willChange = 'transform';
 renderer.shadowMap.enabled = true;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.4;
@@ -4479,7 +4480,8 @@ let deadShown = false;
 function loop() {
   if (window.__DESIGN_MODE__) return;
   window._loopId = requestAnimationFrame(loop);
-  const now = performance.now(), dt = now - lastTime;
+  const now = performance.now();
+  const dt = Math.min(now - lastTime, 33); // cap at ~30fps floor to prevent jumps
   lastTime = now;
 
   if (gs.state === 'playing') {
