@@ -169,6 +169,7 @@ body{background:#000;display:flex;justify-content:center;align-items:center;heig
     </div>
   </div>
 
+  <div id="hudGhostGap" style="display:none;position:absolute;top:55px;left:50%;transform:translateX(-50%);background:rgba(80,0,180,0.8);color:#fff;padding:5px 16px;border-radius:20px;font-size:15px;font-weight:bold;z-index:5;pointer-events:none;white-space:nowrap">BEST RUN: <span id="hudGhostGapVal">--</span></div>
   <div id="controls-hint">&#x2190;&#x2192; lanes | &#x2191; jump | &#x2193; slide | swipe on mobile</div>
 </div>
 
@@ -3008,8 +3009,10 @@ function updateMiri(g, frame, jumping, crouching, jumpY, ridingScooter) {
     g.userData.thighs.forEach(t => t.visible = true);
   }
 
-  g.userData.ring.material.opacity = 0.25 + Math.sin(frame * 0.1) * 0.1;
-  g.userData.ring.position.y = 0.02 + yOff * 0.1;
+  if (g.userData.ring) {
+    g.userData.ring.material.opacity = 0.25 + Math.sin(frame * 0.1) * 0.1;
+    g.userData.ring.position.y = 0.02 + yOff * 0.1;
+  }
 }
 
 // ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?
@@ -3226,7 +3229,7 @@ function resetGame() {
   if (gs.wordHunt) gs.wordHunt.letters.forEach(l => scene.remove(l.mesh));
   const _newWord = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)];
   Object.assign(gs, {
-    state:'menu', speed:0.15, frame:0, nis:0, totalNis:0, distance:0, tier:0, dailyMode:gs.dailyMode, _rng:gs._rng,
+    state:'menu', speed:0.15, frame:0, nis:0, totalNis:0, distance:0, tier:0, dailyMode:gs.dailyMode, _rng:gs._rng, ghostMode:gs.ghostMode||false,
     busPrice:BASE_BUS_PRICE, multiplier:1, multTimer:0, magnetTimer:0, scooterTimer:0, trumpTimer:0, giyusFreezeTimer:0, slowMotionTimer:0, shieldActive:false,
     playerLane:1, playerX:0, targetX:0,
     jumping:false, jumpVel:0, jumpY:0,
@@ -3278,8 +3281,10 @@ function resetGame() {
   sunGlow.position.z = -60;
   sunGlow2.position.z = -60;
 
-  // Place character on the middle lane
+  // Place active character on the middle lane
   miri.position.set(0, 0, 0);
+  if (typeof charLapid !== 'undefined') charLapid.position.set(0, 0, 0);
+  if (typeof charBenGvir !== 'undefined') charBenGvir.position.set(0, 0, 0);
 
   // Reset chaser inspector close behind the player for dramatic start
   chaserInspector.position.set(0, 0, 6);
@@ -3301,6 +3306,131 @@ function handleKey(key) {
     else if (!gs.crouching) { gs.crouching=true; gs.crouchTimer=CROUCH_DUR; playSound('slide'); }
   }
 }
+
+// ── Lapid player character ────────────────────────────────────────────────────
+function createLapidPlayerCharacter() {
+  const g = new THREE.Group();
+  g.userData = {};
+  const headTex = createLapidHeadTexture();
+  const head = new THREE.Mesh(new THREE.CircleGeometry(0.68, 32),
+    new THREE.MeshBasicMaterial({map: headTex, transparent: true, side: THREE.DoubleSide}));
+  head.position.y = 3.35; g.add(head);
+  g.userData.head = head;
+  const torsoMat = new THREE.MeshStandardMaterial({color: 0x1a3a6a, roughness: 0.6});
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.48, 1.35, 12), torsoMat);
+  torso.position.y = 2.0; g.add(torso);
+  g.userData.torso = torso;
+  const packMat = new THREE.MeshStandardMaterial({color: 0x2255aa, roughness: 0.6});
+  const pack = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.25), packMat);
+  pack.position.set(0, 2.0, -0.42); g.add(pack);
+  const packFront = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.4, 0.08), new THREE.MeshStandardMaterial({color: 0x3366cc}));
+  packFront.position.set(0, 2.05, -0.54); g.add(packFront);
+  g.userData.backpack = [pack, packFront];
+  const pantsMat = new THREE.MeshStandardMaterial({color: 0x111133, roughness: 0.7});
+  const skinMat = new THREE.MeshStandardMaterial({color: 0xe8c8a0, roughness: 0.6});
+  const shoeMat = new THREE.MeshStandardMaterial({color: 0x111111, roughness: 0.9});
+  const upperArms = [], forearms = [], thighs = [], calves = [];
+  for (const side of [-1, 1]) {
+    const ua = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.6, 8), torsoMat);
+    ua.position.set(side * 0.54, 2.05, 0); g.add(ua); upperArms.push(ua);
+    const fa = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.10, 0.55, 8), torsoMat);
+    fa.position.set(side * 0.54, 1.52, 0); g.add(fa); forearms.push(fa);
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), skinMat);
+    hand.position.set(side * 0.54, 1.22, 0); g.add(hand);
+    const th = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 0.7, 8), pantsMat);
+    th.position.set(side * 0.2, 0.82, 0); g.add(th); thighs.push(th);
+    const cv = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 0.65, 8), pantsMat);
+    cv.position.set(side * 0.2, 0.22, 0); g.add(cv); calves.push(cv);
+    const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.12, 0.38), shoeMat);
+    shoe.position.set(side * 0.2, -0.08, 0.08); g.add(shoe);
+  }
+  g.userData.upperArms = upperArms;
+  g.userData.forearms = forearms;
+  g.userData.thighs = thighs;
+  g.userData.calves = calves;
+  g.userData.scooterRide = null;
+  return g;
+}
+
+// ── Ben-Gvir head texture (programmatic) ─────────────────────────────────────
+function createBenGvirHeadTexture() {
+  const size = 256;
+  const c = document.createElement('canvas'); c.width = size; c.height = size;
+  const ctx = c.getContext('2d');
+  ctx.save();
+  ctx.beginPath(); ctx.arc(size/2, size/2, size/2 - 4, 0, Math.PI*2); ctx.closePath(); ctx.clip();
+  ctx.fillStyle = '#c8905a'; ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = '#1a1005';
+  ctx.beginPath(); ctx.ellipse(size/2, 55, 98, 68, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#c8905a';
+  ctx.beginPath(); ctx.ellipse(size/2, 108, 86, 62, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#2a1800';
+  ctx.beginPath(); ctx.ellipse(88, 106, 13, 9, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(168, 106, 13, 9, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(92, 103, 4, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(172, 103, 4, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#a07040'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(128, 118); ctx.lineTo(118, 144); ctx.lineTo(138, 144); ctx.stroke();
+  ctx.fillStyle = '#1a1005';
+  ctx.beginPath(); ctx.ellipse(size/2, 198, 82, 62, 0, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#b07840'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(128, 160, 20, 0.2, Math.PI - 0.2); ctx.stroke();
+  ctx.fillStyle = '#111111';
+  ctx.beginPath(); ctx.ellipse(128, 55, 76, 36, 0, Math.PI, 0); ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle = '#003399'; ctx.lineWidth = 8;
+  ctx.beginPath(); ctx.arc(size/2, size/2, size/2 - 4, 0, Math.PI*2); ctx.stroke();
+  return new THREE.CanvasTexture(c);
+}
+
+function createBenGvirPlayerCharacter() {
+  const g = new THREE.Group();
+  g.userData = {};
+  const headTex = createBenGvirHeadTexture();
+  const head = new THREE.Mesh(new THREE.CircleGeometry(0.68, 32),
+    new THREE.MeshBasicMaterial({map: headTex, transparent: true, side: THREE.DoubleSide}));
+  head.position.y = 3.35; g.add(head);
+  g.userData.head = head;
+  const torsoMat = new THREE.MeshStandardMaterial({color: 0x1a1a1a, roughness: 0.6});
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.48, 1.35, 12), torsoMat);
+  torso.position.y = 2.0; g.add(torso);
+  g.userData.torso = torso;
+  const badgeMat = new THREE.MeshStandardMaterial({color: 0xFFD700, metalness: 0.7, roughness: 0.2});
+  const badge = new THREE.Mesh(new THREE.CircleGeometry(0.12, 8), badgeMat);
+  badge.position.set(0.28, 2.55, 0.46); g.add(badge);
+  const packMat = new THREE.MeshStandardMaterial({color: 0x222222, roughness: 0.8});
+  const pack = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.25), packMat);
+  pack.position.set(0, 2.0, -0.42); g.add(pack);
+  const packFront = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.4, 0.08), new THREE.MeshStandardMaterial({color: 0x333333}));
+  packFront.position.set(0, 2.05, -0.54); g.add(packFront);
+  g.userData.backpack = [pack, packFront];
+  const pantsMat = new THREE.MeshStandardMaterial({color: 0x111111, roughness: 0.7});
+  const skinMat = new THREE.MeshStandardMaterial({color: 0xc8905a, roughness: 0.6});
+  const shoeMat = new THREE.MeshStandardMaterial({color: 0x111111, roughness: 0.9});
+  const upperArms = [], forearms = [], thighs = [], calves = [];
+  for (const side of [-1, 1]) {
+    const ua = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.6, 8), torsoMat);
+    ua.position.set(side * 0.54, 2.05, 0); g.add(ua); upperArms.push(ua);
+    const fa = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.10, 0.55, 8), torsoMat);
+    fa.position.set(side * 0.54, 1.52, 0); g.add(fa); forearms.push(fa);
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), skinMat);
+    hand.position.set(side * 0.54, 1.22, 0); g.add(hand);
+    const th = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 0.7, 8), pantsMat);
+    th.position.set(side * 0.2, 0.82, 0); g.add(th); thighs.push(th);
+    const cv = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 0.65, 8), pantsMat);
+    cv.position.set(side * 0.2, 0.22, 0); g.add(cv); calves.push(cv);
+    const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.12, 0.38), shoeMat);
+    shoe.position.set(side * 0.2, -0.08, 0.08); g.add(shoe);
+  }
+  g.userData.upperArms = upperArms;
+  g.userData.forearms = forearms;
+  g.userData.thighs = thighs;
+  g.userData.calves = calves;
+  g.userData.scooterRide = null;
+  return g;
+}
+
 
 function createMordechaiDavid() {
   const g = new THREE.Group();
@@ -4374,6 +4504,130 @@ function bumpBusPrice() {
 // ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?ן¿½?
 const miri = createMiriCharacter();
 scene.add(miri);
+const charLapid = createLapidPlayerCharacter();
+charLapid.visible = false;
+scene.add(charLapid);
+const charBenGvir = createBenGvirPlayerCharacter();
+charBenGvir.visible = false;
+scene.add(charBenGvir);
+let activeChar = miri;
+let selectedCharName = 'miri';
+// Ghost run system
+let ghostFrames = [];
+let ghostPlayback = null;
+let ghostMesh = null;
+function loadGhostRun() {
+  try { return JSON.parse(localStorage.getItem('miriSurfersGhost')) || null; }
+  catch { return null; }
+}
+function saveGhostRun(frames) {
+  try { localStorage.setItem('miriSurfersGhost', JSON.stringify(frames)); } catch {}
+}
+function startGhostRun() {
+  ghostPlayback = loadGhostRun();
+  if (!ghostPlayback || ghostPlayback.length === 0) return false;
+  if (ghostMesh) scene.remove(ghostMesh);
+  ghostMesh = createMiriCharacter();
+  ghostMesh.traverse(c => {
+    if (c.isMesh && c.material) {
+      c.material = c.material.clone();
+      c.material.transparent = true;
+      c.material.opacity = 0.35;
+    }
+  });
+  // BEST RUN label above ghost
+  const ghostLabelC = document.createElement('canvas'); ghostLabelC.width = 256; ghostLabelC.height = 64;
+  const glCtx = ghostLabelC.getContext('2d');
+  glCtx.fillStyle = 'rgba(80,0,180,0.85)'; glCtx.fillRect(8, 8, 240, 48);
+  glCtx.fillStyle = '#fff'; glCtx.font = 'bold 22px Arial'; glCtx.textAlign = 'center';
+  glCtx.fillText('BEST RUN', 128, 38);
+  const ghostLabelTex = new THREE.CanvasTexture(ghostLabelC);
+  const ghostLabel = new THREE.Mesh(
+    new THREE.PlaneGeometry(2.2, 0.55),
+    new THREE.MeshBasicMaterial({map: ghostLabelTex, transparent: true, depthWrite: false})
+  );
+  ghostLabel.position.y = 5.2;
+  ghostMesh.add(ghostLabel);
+  ghostMesh.userData.label = ghostLabel;
+  scene.add(ghostMesh);
+  return true;
+}
+function stopGhostRun() {
+  if (ghostMesh) { scene.remove(ghostMesh); ghostMesh = null; }
+  ghostPlayback = null;
+}
+
+function selectChar(name) {
+  selectedCharName = name;
+  miri.visible = name === 'miri';
+  charLapid.visible = name === 'lapid';
+  charBenGvir.visible = name === 'bengvir';
+  activeChar = name === 'miri' ? miri : name === 'lapid' ? charLapid : charBenGvir;
+  // Update UI card highlights
+  ['miri','lapid','bengvir'].forEach(n => {
+    const card = document.getElementById('charCard' + n.charAt(0).toUpperCase() + n.slice(1));
+    if (card) card.style.border = n === name ? '3px solid gold' : '3px solid #555';
+  });
+  const label = document.getElementById('selectedCharLabel');
+  const names = {miri:'Miri', lapid:'Lapid', bengvir:'Ben-Gvir'};
+  if (label) label.textContent = 'Playing as: ' + (names[name] || name);
+  // Close char select overlay
+  document.getElementById('charSelectOverlay').classList.remove('visible');
+  document.getElementById('menuOverlay').classList.add('visible');
+}
+
+// Draw character preview faces in the select screen
+function drawCharPreviews() {
+  // Miri
+  const cMiri = document.getElementById('charFaceMiri');
+  if (cMiri) {
+    const ctx = cMiri.getContext('2d');
+    const img = new Image();
+    img.onload = () => {
+      ctx.save(); ctx.beginPath(); ctx.arc(40,40,38,0,Math.PI*2); ctx.clip();
+      ctx.drawImage(img, 0, 0, 80, 80); ctx.restore();
+    };
+    img.src = typeof IMG_MIRI !== 'undefined' ? IMG_MIRI : '';
+  }
+  // Lapid
+  const cLapid = document.getElementById('charFaceLapid');
+  if (cLapid) {
+    const ctx = cLapid.getContext('2d');
+    const img = new Image();
+    img.onload = () => {
+      ctx.save(); ctx.beginPath(); ctx.arc(40,40,38,0,Math.PI*2); ctx.clip();
+      ctx.drawImage(img, 0, 0, 80, 80); ctx.restore();
+    };
+    img.src = typeof IMG_LAPID !== 'undefined' ? IMG_LAPID : '';
+  }
+  // Ben-Gvir (programmatic)
+  const cBG = document.getElementById('charFaceBengvir');
+  if (cBG) {
+    const ctx = cBG.getContext('2d');
+    ctx.save(); ctx.beginPath(); ctx.arc(40,40,38,0,Math.PI*2); ctx.clip();
+    ctx.fillStyle = '#c8905a'; ctx.fillRect(0,0,80,80);
+    ctx.fillStyle = '#1a1005'; ctx.beginPath(); ctx.ellipse(40,15,32,20,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#c8905a'; ctx.beginPath(); ctx.ellipse(40,34,27,20,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#2a1800';
+    ctx.beginPath(); ctx.ellipse(28,33,5,4,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(52,33,5,4,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#1a1005'; ctx.beginPath(); ctx.ellipse(40,62,26,20,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#111'; ctx.beginPath(); ctx.ellipse(40,14,24,12,0,Math.PI,0); ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle = '#003399'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(40,40,38,0,Math.PI*2); ctx.stroke();
+  }
+}
+setTimeout(drawCharPreviews, 200);
+// Init UI labels
+const _initLabel = document.getElementById('selectedCharLabel');
+if (_initLabel) _initLabel.textContent = 'Playing as: Miri';
+const _ghostBtn = document.getElementById('btnGhostRun');
+if (_ghostBtn) {
+  const _hasGhost = loadGhostRun();
+  _ghostBtn.style.opacity = (_hasGhost && _hasGhost.length > 0) ? '1' : '0.5';
+  _ghostBtn.title = (_hasGhost && _hasGhost.length > 0) ? 'Race against your best run!' : 'Play a run first to unlock Ghost Run';
+}
 
 const chaserInspector = createChaserInspector();
 chaserInspector.position.set(0, 0, 6);
@@ -4429,10 +4683,48 @@ function requestFullscreen() {
   const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
   if (req) req.call(el).catch(() => {});
 }
+// Character select button
+document.getElementById('btnChooseChar').onclick = () => {
+  elMenu.classList.remove('visible');
+  document.getElementById('charSelectOverlay').classList.add('visible');
+  setTimeout(drawCharPreviews, 50);
+};
+document.getElementById('btnCharBack').onclick = () => {
+  document.getElementById('charSelectOverlay').classList.remove('visible');
+  elMenu.classList.add('visible');
+};
+
+// Ghost Run button
+document.getElementById('btnGhostRun').onclick = () => {
+  const hasGhost = loadGhostRun();
+  if (!hasGhost || hasGhost.length === 0) {
+    const btn = document.getElementById('btnGhostRun');
+    const orig = btn.textContent;
+    btn.textContent = 'No ghost saved yet!';
+    setTimeout(() => { btn.textContent = orig; }, 1800);
+    return;
+  }
+  requestFullscreen();
+  _ac();
+  gs.dailyMode = false; gs._rng = null; gs.ghostMode = true;
+  ghostFrames = [];
+  const ok = startGhostRun();
+  if (!ok) return;
+  resetGame();
+  gs.state = 'playing';
+  gs.targetX = LANE_X[1];
+  chaserInspector.visible = true;
+  elMenu.classList.remove('visible');
+  elGO.classList.remove('visible');
+  startBgMusic();
+};
+
 document.getElementById('btnStart').onclick = () => {
   requestFullscreen();
   _ac();
-  gs.dailyMode = false; gs._rng = null;
+  gs.dailyMode = false; gs._rng = null; gs.ghostMode = false;
+  ghostFrames = [];
+  stopGhostRun();
   resetGame();
   gs.state = 'playing';
   gs.targetX = LANE_X[1];
@@ -4525,10 +4817,38 @@ function loop() {
       }
     }
     const stumbleShake = gs.stumbling ? (Math.sin(gs.frame * 1.2) * 0.15) : 0;
-    miri.position.set(gs.playerX + stumbleShake, skyY, gs.playerZ);
-    miri.rotation.x = skyY > 0 ? 0.1 * (skyY / 8) : 0;
-    if (miri.userData.scooterRide) miri.userData.scooterRide.visible = skyY > 0;
-    updateMiri(miri, gs.frame, gs.jumping, gs.crouching, gs.jumpY, skyY > 0);
+    const _charMesh = typeof activeChar !== 'undefined' ? activeChar : miri;
+    _charMesh.position.set(gs.playerX + stumbleShake, skyY, gs.playerZ);
+    _charMesh.rotation.x = skyY > 0 ? 0.1 * (skyY / 8) : 0;
+    if (_charMesh.userData.scooterRide) _charMesh.userData.scooterRide.visible = skyY > 0;
+    updateMiri(_charMesh, gs.frame, gs.jumping, gs.crouching, gs.jumpY, skyY > 0);
+    // Ghost run: record frame
+    if (typeof ghostFrames !== 'undefined' && !gs.ghostMode) {
+      if (gs.frame % 3 === 0) ghostFrames.push({x: gs.playerX, y: gs.jumpY, c: gs.crouching ? 1 : 0});
+    }
+    // Ghost run: playback
+    const _ghHUD = document.getElementById('hudGhostGap');
+    if (typeof ghostMesh !== 'undefined' && ghostMesh && gs.ghostMode && typeof ghostPlayback !== 'undefined' && ghostPlayback) {
+      const gfi = Math.floor(gs.frame / 3);
+      if (gfi < ghostPlayback.length) {
+        const gf = ghostPlayback[gfi];
+        ghostMesh.position.set(gf.x, gf.y, gs.playerZ - 10);
+        updateMiri(ghostMesh, gs.frame, false, gf.c === 1, gf.y, false);
+        if (ghostMesh.userData.label) ghostMesh.userData.label.lookAt(camera.position);
+        if (_ghHUD) {
+          _ghHUD.style.display = 'block';
+          const ghostDist = gfi * 3 * 0.015;
+          const gap = Math.round(ghostDist - gs.distance);
+          const valEl = document.getElementById('hudGhostGapVal');
+          if (valEl) valEl.textContent = gap > 0 ? gap + 'm behind' : Math.abs(gap) + 'm AHEAD!';
+          _ghHUD.style.background = gap > 0 ? 'rgba(80,0,180,0.8)' : 'rgba(0,150,0,0.85)';
+        }
+      } else {
+        if (_ghHUD) { _ghHUD.style.display = 'block'; _ghHUD.style.background = 'rgba(0,180,0,0.9)'; const v = document.getElementById('hudGhostGapVal'); if(v) v.textContent = 'BEATEN!'; }
+      }
+    } else {
+      if (_ghHUD) _ghHUD.style.display = 'none';
+    }
     updateEnvironment(gs.playerZ);
     updateHUD();
     deadShown = false;
@@ -4541,6 +4861,18 @@ function loop() {
     elGoNis.textContent = `\u20AA${gs.nis.toFixed(2)} collected`;
     elGoDist.textContent = `${Math.floor(gs.distance)}m`;
     elGoPrice.textContent = `\uD83D\uDE8C \u20AA${BASE_BUS_PRICE.toFixed(2)} \u2192 \u20AA${gs.busPrice.toFixed(2)}`;
+    // Save ghost run data (only for normal runs, not ghost replays)
+    if (!gs.ghostMode && ghostFrames.length > 0) {
+      const prev = loadGhostRun();
+      if (!prev || gs.distance > (prev._dist || 0)) {
+        ghostFrames._dist = gs.distance;
+        saveGhostRun(ghostFrames);
+        const btn = document.getElementById('btnGhostRun');
+        if (btn) btn.style.opacity = '1';
+      }
+      ghostFrames = [];
+    }
+    stopGhostRun();
     if (gs.dailyMode) {
       saveDailyScore(gs.distance, gs.nis);
       const _daily = loadDailyScores();
