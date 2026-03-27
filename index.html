@@ -3402,44 +3402,46 @@ function createSmotrich(openLane) {
   bctx.font='27px "Courier New",monospace'; bctx.textAlign='left';
   vocab.forEach((line,i)=>bctx.fillText(line,40,100+i*54));
   const boardTex = new THREE.CanvasTexture(boardC);
-  // Full-width board across all 3 lanes
-  const board = new THREE.Mesh(new THREE.BoxGeometry(8.5,3.0,0.12),[
+  // Board covers 2 lanes — offset to covered side, width 5.5 covers ~2 lanes
+  // openLane=0 (left free): board center at x=+1.5; openLane=2 (right free): board at x=-1.5
+  const bx = openLane === 0 ? 1.5 : -1.5;
+  const board = new THREE.Mesh(new THREE.BoxGeometry(5.5,3.0,0.12),[
     new THREE.MeshStandardMaterial({color:0x8b5e2a}), new THREE.MeshStandardMaterial({color:0x8b5e2a}),
     new THREE.MeshStandardMaterial({color:0x8b5e2a}), new THREE.MeshStandardMaterial({color:0x8b5e2a}),
     new THREE.MeshBasicMaterial({map:boardTex}),       new THREE.MeshStandardMaterial({color:0x8b5e2a})
   ]);
-  board.position.set(0, 3.5, 0); g.add(board);
-  for (const lx of [-3.9, 3.9]) {
+  board.position.set(bx, 3.5, 0); g.add(board);
+  for (const lx of [bx-2.6, bx+2.6]) {
     const leg = new THREE.Mesh(new THREE.BoxGeometry(0.12,2.1,0.12), stickMat);
     leg.position.set(lx, 1.0, 0); g.add(leg);
   }
-  // Ground arrow hint — glowing arrow on the open lane
-  const arrowX = openLane === 0 ? -3 : openLane === 2 ? 3 : 0;
+  // Ground arrow on the open lane
+  const arrowX = openLane === 0 ? -3 : 3;
   const arrowC = document.createElement('canvas'); arrowC.width=128; arrowC.height=128;
   const actx = arrowC.getContext('2d');
-  actx.fillStyle='rgba(0,255,120,0.85)';
+  actx.fillStyle='rgba(0,255,120,0.9)';
   actx.beginPath(); actx.moveTo(64,10); actx.lineTo(110,80); actx.lineTo(80,80); actx.lineTo(80,118); actx.lineTo(48,118); actx.lineTo(48,80); actx.lineTo(18,80); actx.closePath(); actx.fill();
   const arrowTex = new THREE.CanvasTexture(arrowC);
-  const arrow = new THREE.Mesh(new THREE.PlaneGeometry(1.4,1.4), new THREE.MeshBasicMaterial({map:arrowTex,transparent:true,depthWrite:false}));
+  const arrow = new THREE.Mesh(new THREE.PlaneGeometry(1.6,1.6), new THREE.MeshBasicMaterial({map:arrowTex,transparent:true,depthWrite:false}));
   arrow.rotation.x = -Math.PI/2; arrow.position.set(arrowX, 0.05, 1.5);
   g.add(arrow); g.userData.arrowMesh = arrow;
-  // Smotrich body at center
-  for (const lx of [-0.2, 0.2]) {
+  // Smotrich body centered on the board
+  for (const lx of [bx-0.2, bx+0.2]) {
     const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.11,1.2,8), suitMat);
     leg.position.set(lx, 0.6, 0); g.add(leg);
     const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.22,0.13,0.38), shoeMat);
     shoe.position.set(lx, 0.06, 0.07); g.add(shoe);
   }
   const torso = new THREE.Mesh(new THREE.BoxGeometry(0.88,1.15,0.42), suitMat);
-  torso.position.set(0, 1.78, 0); g.add(torso);
+  torso.position.set(bx, 1.78, 0); g.add(torso);
   const shirt = new THREE.Mesh(new THREE.BoxGeometry(0.3,0.7,0.44), shirtMat);
-  shirt.position.set(0, 1.82, 0.18); g.add(shirt);
+  shirt.position.set(bx, 1.82, 0.18); g.add(shirt);
   const rArm = new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.08,0.9,8), suitMat);
-  rArm.rotation.z = 0.7; rArm.position.set(-0.62, 2.2, 0); g.add(rArm);
+  rArm.rotation.z = 0.7; rArm.position.set(bx-0.62, 2.2, 0); g.add(rArm);
   const rHand = new THREE.Mesh(new THREE.SphereGeometry(0.10,8,8), skinMat);
-  rHand.position.set(-0.98, 2.6, 0); g.add(rHand);
+  rHand.position.set(bx-0.98, 2.6, 0); g.add(rHand);
   const pointer = new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.018,2.2,7), stickMat);
-  pointer.rotation.z = -0.5; pointer.position.set(-0.7, 3.0, 0); g.add(pointer);
+  pointer.rotation.z = -0.5; pointer.position.set(bx-0.7, 3.0, 0); g.add(pointer);
   const lArm = new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.08,0.85,8), suitMat);
   lArm.rotation.z = -0.18; lArm.position.set(bx+0.50, 1.72, 0); g.add(lArm);
   const lHand = new THREE.Mesh(new THREE.SphereGeometry(0.10,8,8), skinMat);
@@ -3463,10 +3465,10 @@ function createSmotrich(openLane) {
   drawSMFace(); smImg.onload = drawSMFace; smImg.onerror = drawSMFace; smImg.src = IMG_SMOTRICH;
   const smHead = new THREE.Mesh(new THREE.CircleGeometry(0.82,32),
     new THREE.MeshBasicMaterial({map:smTex, transparent:true, side:THREE.DoubleSide}));
-  smHead.position.set(0, 3.05, 0.4); g.add(smHead);
+  smHead.position.set(bx, 3.05, 0.4); g.add(smHead);
   const kippah = new THREE.Mesh(new THREE.SphereGeometry(0.44,12,6,0,Math.PI*2,0,Math.PI/2.5),
     new THREE.MeshStandardMaterial({color:0x1a1a2e, roughness:0.7}));
-  kippah.position.set(0, 3.62, 0.4); g.add(kippah);
+  kippah.position.set(bx, 3.62, 0.4); g.add(kippah);
   // 2 small children sitting in front
   const childSkinMat = new THREE.MeshStandardMaterial({color: 0xe0b090, roughness: 0.7});
   const childShirtColors = [0x3355cc, 0xcc3322];

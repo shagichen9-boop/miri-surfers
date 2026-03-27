@@ -1089,47 +1089,50 @@
     bctx.textAlign = 'left';
     vocab.forEach((line, i) => bctx.fillText(line, 40, 100 + i * 54));
     const boardTex = new THREE.CanvasTexture(boardC);
-    // Board height 3.0, center at y=3.5 → bottom at 2.0 (above slide height 1.75)
-    const board = new THREE.Mesh(new THREE.BoxGeometry(5.2, 3.0, 0.12),
+    // Board covers right 2 lanes (openLane=0, left is free) for design preview
+    const dbx = 1.5;
+    const board = new THREE.Mesh(new THREE.BoxGeometry(5.5, 3.0, 0.12),
       [ new THREE.MeshStandardMaterial({color:0x8b5e2a}),
         new THREE.MeshStandardMaterial({color:0x8b5e2a}),
         new THREE.MeshStandardMaterial({color:0x8b5e2a}),
         new THREE.MeshStandardMaterial({color:0x8b5e2a}),
         new THREE.MeshBasicMaterial({map: boardTex}),
         new THREE.MeshStandardMaterial({color:0x8b5e2a}) ]);
-    board.position.set(-2.4, 3.5, 0); g.add(board);
-    // Board legs — tall enough to reach the raised board bottom (y≈2.0)
-    for (const lx of [-4.6, -0.2]) {
+    board.position.set(dbx, 3.5, 0); g.add(board);
+    for (const lx of [dbx-2.6, dbx+2.6]) {
       const leg = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.1, 0.12), stickMat);
       leg.position.set(lx, 1.0, 0); g.add(leg);
     }
+    // Green arrow on open (left) lane
+    const arrowC2 = document.createElement('canvas'); arrowC2.width=128; arrowC2.height=128;
+    const actx2 = arrowC2.getContext('2d');
+    actx2.fillStyle='rgba(0,255,120,0.9)';
+    actx2.beginPath(); actx2.moveTo(64,10); actx2.lineTo(110,80); actx2.lineTo(80,80); actx2.lineTo(80,118); actx2.lineTo(48,118); actx2.lineTo(48,80); actx2.lineTo(18,80); actx2.closePath(); actx2.fill();
+    const arrowTex2 = new THREE.CanvasTexture(arrowC2);
+    const arrow2 = new THREE.Mesh(new THREE.PlaneGeometry(1.6,1.6), new THREE.MeshBasicMaterial({map:arrowTex2,transparent:true,depthWrite:false}));
+    arrow2.rotation.x = -Math.PI/2; arrow2.position.set(-3, 0.05, 1.5); g.add(arrow2);
 
-    // ── Smotrich body ───────────────────────────────────────────────────────
-    // Legs
-    for (const lx of [-0.2, 0.2]) {
+    // ── Smotrich body — centered on board ──────────────────────────────────
+    for (const lx of [dbx-0.2, dbx+0.2]) {
       const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.11, 1.2, 8), suitMat);
       leg.position.set(lx, 0.6, 0); g.add(leg);
       const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.13, 0.38), shoeMat);
       shoe.position.set(lx, 0.06, 0.07); g.add(shoe);
     }
-    // Torso
     const torso = new THREE.Mesh(new THREE.BoxGeometry(0.88, 1.15, 0.42), suitMat);
-    torso.position.y = 1.78; g.add(torso);
+    torso.position.set(dbx, 1.78, 0); g.add(torso);
     const shirt = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.7, 0.44), shirtMat);
-    shirt.position.set(0, 1.82, 0.18); g.add(shirt);
-    // Right arm — raised, holding pointer toward board
+    shirt.position.set(dbx, 1.82, 0.18); g.add(shirt);
     const rArm = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.08, 0.9, 8), suitMat);
-    rArm.rotation.z = -0.7; rArm.position.set(0.62, 2.2, 0); g.add(rArm);
+    rArm.rotation.z = 0.7; rArm.position.set(dbx-0.62, 2.2, 0); g.add(rArm);
     const rHand = new THREE.Mesh(new THREE.SphereGeometry(0.10, 8, 8), skinMat);
-    rHand.position.set(0.98, 2.6, 0); g.add(rHand);
-    // Pointer stick
+    rHand.position.set(dbx-0.98, 2.6, 0); g.add(rHand);
     const pointer = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.018, 2.2, 7), stickMat);
-    pointer.rotation.z = -0.5; pointer.position.set(0.3, 3.0, 0); g.add(pointer);
-    // Left arm — down at side
+    pointer.rotation.z = -0.5; pointer.position.set(dbx-0.7, 3.0, 0); g.add(pointer);
     const lArm = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.08, 0.85, 8), suitMat);
-    lArm.rotation.z = 0.18; lArm.position.set(-0.50, 1.72, 0); g.add(lArm);
+    lArm.rotation.z = -0.18; lArm.position.set(dbx+0.50, 1.72, 0); g.add(lArm);
     const lHand = new THREE.Mesh(new THREE.SphereGeometry(0.10, 8, 8), skinMat);
-    lHand.position.set(-0.56, 1.28, 0); g.add(lHand);
+    lHand.position.set(dbx+0.56, 1.28, 0); g.add(lHand);
     // Head — photo face
     const smFaceC = document.createElement('canvas'); smFaceC.width = 512; smFaceC.height = 512;
     const smCtx = smFaceC.getContext('2d');
@@ -1157,11 +1160,10 @@
     drawSMFace(); smImg.onload = drawSMFace; smImg.onerror = drawSMFace; smImg.src = IMG_SMOTRICH;
     const smHead = new THREE.Mesh(new THREE.CircleGeometry(0.82, 32),
       new THREE.MeshBasicMaterial({map: smTex, transparent:true, side: THREE.DoubleSide}));
-    smHead.position.set(0, 3.05, 0.4); g.add(smHead);
-    // Kippah
+    smHead.position.set(dbx, 3.05, 0.4); g.add(smHead);
     const kippahMat = new THREE.MeshStandardMaterial({color: 0x1a1a2e, roughness: 0.7});
     const kippah = new THREE.Mesh(new THREE.SphereGeometry(0.44, 12, 6, 0, Math.PI*2, 0, Math.PI/2.5), kippahMat);
-    kippah.position.set(0, 3.62, 0.4); g.add(kippah);
+    kippah.position.set(dbx, 3.62, 0.4); g.add(kippah);
 
     // ── 2 small children sitting in front ──────────────────────────────────
     const childSkinMat = new THREE.MeshStandardMaterial({color: 0xe0b090, roughness: 0.7});
