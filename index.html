@@ -614,6 +614,7 @@ function createConstructionSite() {
   sp2.position.set(4, 2.75, 10); g.add(sp2);
 
   g.userData._roadOffset = 14;
+  g.userData._noFlip = true;
   return g;
 }
 
@@ -1568,7 +1569,7 @@ for (let i = 0; i < 6; i++) {
   const off = ev.userData._roadOffset || 6;
   ev.position.set(side * (ROAD_WIDTH / 2 + off), 0, -i * EVENT_SPACING - 300);
   ev.userData._baseRotY = ev.rotation.y;
-  if (side === -1) ev.rotation.y = ev.userData._baseRotY + Math.PI;
+  if (side === -1 && !ev.userData._noFlip) ev.rotation.y = ev.userData._baseRotY + Math.PI;
   scene.add(ev);
   eventScenery.push(ev);
 }
@@ -1595,7 +1596,7 @@ function updateEnvironment(playerZ) {
       ev.position.z -= eventScenery.length * EVENT_SPACING;
       const side = (Math.random() > 0.5) ? 1 : -1;
       ev.position.x = side * (ROAD_WIDTH / 2 + (ev.userData._roadOffset || 6));
-      ev.rotation.y = (side === -1) ? ev.userData._baseRotY + Math.PI : ev.userData._baseRotY;
+      ev.rotation.y = (side === -1 && !ev.userData._noFlip) ? ev.userData._baseRotY + Math.PI : ev.userData._baseRotY;
     }
   }
   // Hide buildings near events
@@ -4199,7 +4200,7 @@ function resetGame() {
     const ev = eventScenery[i];
     const side = (i % 2 === 0) ? 1 : -1;
     ev.position.set(side * (ROAD_WIDTH / 2 + (ev.userData._roadOffset || 6)), 0, -i * EVENT_SPACING - 300);
-    ev.rotation.y = (side === -1) ? ev.userData._baseRotY + Math.PI : ev.userData._baseRotY;
+    ev.rotation.y = (side === -1 && !ev.userData._noFlip) ? ev.userData._baseRotY + Math.PI : ev.userData._baseRotY;
   }
   for (const b of buildings) b.visible = true;
 
