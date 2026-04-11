@@ -96,7 +96,7 @@ body{background:#000;display:flex;justify-content:center;align-items:center;heig
     <span id="hudDaily" style="display:none;font-size:13px;font-weight:bold;color:#ffaa00;margin-left:6px">&#x1F4C5; DAILY</span>
   </div>
   <div id="hudBusPrice">&#x1F68C; Ticket: &#x20AA;5.50</div>
-  <div id="hudExtraLife" style="position:absolute;top:60px;right:12px;font-size:22px;display:none;pointer-events:none;z-index:5;text-shadow:0 0 8px #ff4488">&#x2764;&#xFE0F;</div>
+  <div id="hudExtraLife" style="position:absolute;top:60px;right:12px;font-size:24px;display:none;pointer-events:none;z-index:5;text-shadow:0 0 8px #ff4488;color:#ff4488;font-weight:bold">&#x2764;&#xFE0F; x2</div>
   <div id="hudChaserWarn" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:28px;font-weight:bold;color:#ff2222;text-shadow:0 0 20px #ff0000,0 0 40px #ff000088;pointer-events:none;z-index:6;animation:chaserPulse 0.5s infinite alternate">⚠️ לפיד מתקרב!</div>
   <div id="floatingTextContainer"></div>
   <div id="stumbleOverlay"></div>
@@ -111,6 +111,7 @@ body{background:#000;display:flex;justify-content:center;align-items:center;heig
       <button id="btnChooseChar" style="padding:14px 28px;font-size:18px;background:linear-gradient(135deg,#004422,#00aa44);border:none;border-radius:35px;color:#fff;font-weight:bold;cursor:pointer;letter-spacing:1px">&#x1F464; CHARACTER</button>
       <button id="btnDaily" style="padding:14px 28px;font-size:18px;background:linear-gradient(135deg,#aa6600,#ffaa00);border:none;border-radius:35px;color:#fff;font-weight:bold;cursor:pointer;letter-spacing:1px">&#x1F4C5; DAILY</button>
       <button id="btnOutfit" style="padding:14px 28px;font-size:18px;background:linear-gradient(135deg,#880044,#ee0077);border:none;border-radius:35px;color:#fff;font-weight:bold;cursor:pointer;letter-spacing:1px">&#x1F457; OUTFIT</button>
+      <button id="btnDesign" style="padding:14px 28px;font-size:18px;background:linear-gradient(135deg,#444,#888);border:none;border-radius:35px;color:#fff;font-weight:bold;cursor:pointer;letter-spacing:1px">&#x1F527; DESIGN</button>
     </div>
     <div id="selectedCharLabel" style="font-size:13px;color:#88ffaa;margin-top:6px;font-weight:bold">Playing as: Miri</div>
     <div id="dailyDateLabel" style="font-size:12px;color:#ffcc88;margin-top:4px"></div>
@@ -147,6 +148,7 @@ body{background:#000;display:flex;justify-content:center;align-items:center;heig
       </div>
     </div>
     <button id="btnTryAgain">TRY AGAIN</button>
+    <button id="btnBackToMenu" style="padding:14px 28px;font-size:18px;background:linear-gradient(135deg,#444,#888);border:none;border-radius:35px;color:#fff;font-weight:bold;cursor:pointer;letter-spacing:1px;margin-top:8px">MENU</button>
   </div>
 
   <div class="overlay" id="dailyWinOverlay">
@@ -360,6 +362,528 @@ function makeCanvasTex(text, w, h, bg, fg, fontSize) {
   x.fillStyle = fg||'#000'; x.font = `bold ${fontSize||32}px Arial`; x.textAlign = 'center'; x.textBaseline = 'middle';
   x.fillText(text, w/2, h/2);
   const t = new THREE.CanvasTexture(c); t.needsUpdate = true; return t;
+}
+
+function createConstructionSite() {
+  const g = new THREE.Group();
+  const orangeMat = new THREE.MeshStandardMaterial({color: 0xff6600, roughness: 0.6});
+  const concreteMat = new THREE.MeshStandardMaterial({color: 0xbbbbaa, roughness: 0.9});
+  const metalMat = new THREE.MeshStandardMaterial({color: 0x888899, metalness: 0.6, roughness: 0.4});
+  const darkMetalMat = new THREE.MeshStandardMaterial({color: 0x444455, metalness: 0.7, roughness: 0.3});
+  const dirtMat = new THREE.MeshStandardMaterial({color: 0x8B7355, roughness: 1.0});
+  const yellowMat = new THREE.MeshStandardMaterial({color: 0xFFCC00, roughness: 0.5});
+  const woodMat = new THREE.MeshStandardMaterial({color: 0x9B7653, roughness: 0.8});
+  const blueTarpMat = new THREE.MeshStandardMaterial({color: 0x2255aa, roughness: 0.7, side: THREE.DoubleSide});
+  const gravelMat = new THREE.MeshStandardMaterial({color: 0x999988, roughness: 1.0});
+  const skinMat = new THREE.MeshStandardMaterial({color: 0xDEB887});
+  const whiteMat = new THREE.MeshStandardMaterial({color: 0xdddddd, roughness: 0.6});
+  const railMat = new THREE.MeshStandardMaterial({color: 0x666677, metalness: 0.7, roughness: 0.3});
+  const ballastMat = new THREE.MeshStandardMaterial({color: 0x887766, roughness: 1.0});
+  const sleeperMat = new THREE.MeshStandardMaterial({color: 0x777777, roughness: 0.8});
+  const fencePostMat = new THREE.MeshStandardMaterial({color: 0x777777, metalness: 0.5});
+  const fenceMat = new THREE.MeshStandardMaterial({color: 0xaaaaaa, transparent: true, opacity: 0.3, side: THREE.DoubleSide, metalness: 0.3});
+
+  // Large dirt ground for the whole site
+  const dirt = new THREE.Mesh(new THREE.PlaneGeometry(24, 20), dirtMat);
+  dirt.rotation.x = -Math.PI / 2; dirt.position.set(0, 0.05, 2); g.add(dirt);
+
+  // RAISED TRACK BED (visible gravel mound with rails on top)
+  const trackBed = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.6, 18), gravelMat);
+  trackBed.position.set(0, 0.3, 0); g.add(trackBed);
+
+  // Rail tracks on top of the raised bed
+  for (const rx of [-0.75, 0.75]) {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.15, 18), railMat);
+    rail.position.set(rx, 0.68, 0); g.add(rail);
+  }
+
+  // Concrete sleepers/ties across the tracks
+  for (let t = -7; t <= 7; t++) {
+    const sleeper = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.12, 0.3), sleeperMat);
+    sleeper.position.set(0, 0.6, t * 1.1); g.add(sleeper);
+  }
+
+  // LIGHT RAIL TRAIN CAR (partially assembled, sitting on tracks)
+  const tramMat = new THREE.MeshStandardMaterial({color: 0xeeeeff, roughness: 0.3, metalness: 0.2});
+  const tramBlueMat = new THREE.MeshStandardMaterial({color: 0x2266cc, roughness: 0.4});
+  const tramBody = new THREE.Mesh(new THREE.BoxGeometry(2.2, 2.2, 6), tramMat);
+  tramBody.position.set(0, 1.95, -2); g.add(tramBody);
+  const tramStripe = new THREE.Mesh(new THREE.BoxGeometry(2.25, 0.4, 6.05), tramBlueMat);
+  tramStripe.position.set(0, 1.2, -2); g.add(tramStripe);
+  const tramRoof = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.1, 6.2),
+    new THREE.MeshStandardMaterial({color: 0xcccccc, roughness: 0.5}));
+  tramRoof.position.set(0, 3.1, -2); g.add(tramRoof);
+  // Tram windows
+  const tramGlassMat = new THREE.MeshStandardMaterial({color: 0x88bbee, transparent: true, opacity: 0.5});
+  for (let w = 0; w < 3; w++) {
+    for (const sx of [-1.11, 1.11]) {
+      const win = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1), tramGlassMat);
+      win.position.set(sx, 2.2, -4 + w * 2);
+      win.rotation.y = sx > 0 ? 0 : Math.PI;
+      g.add(win);
+    }
+  }
+  // Tram wheels (4 visible)
+  for (const wz of [-3.5, -0.5]) {
+    for (const wx of [-0.85, 0.85]) {
+      const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.1, 10), darkMetalMat);
+      wheel.rotation.x = Math.PI / 2; wheel.position.set(wx, 0.78, wz); g.add(wheel);
+    }
+  }
+  // Pantograph on roof (the folding arm that touches the electric wire)
+  const pantoBase = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.08, 0.4), darkMetalMat);
+  pantoBase.position.set(0, 3.15, -2); g.add(pantoBase);
+  const pantoArm1 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.2, 0.06), darkMetalMat);
+  pantoArm1.rotation.z = 0.2; pantoArm1.position.set(-0.1, 3.75, -2); g.add(pantoArm1);
+  const pantoArm2 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.2, 0.06), darkMetalMat);
+  pantoArm2.rotation.z = -0.2; pantoArm2.position.set(0.1, 3.75, -2); g.add(pantoArm2);
+  const pantoHead = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.04, 0.08), darkMetalMat);
+  pantoHead.position.set(0, 4.3, -2); g.add(pantoHead);
+
+  // Stacked spare sleepers on the side
+  for (let s = 0; s < 4; s++) {
+    for (let r = 0; r < (4 - s); r++) {
+      const sp = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.12, 0.3), sleeperMat);
+      sp.position.set(5, 0.06 + s * 0.14, -4 + r * 0.4); g.add(sp);
+    }
+  }
+
+  // Spare rail sections stacked on a rack
+  for (let r = 0; r < 4; r++) {
+    const spareRail = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.15, 8), railMat);
+    spareRail.position.set(-5 + r * 0.25, 0.15 + r * 0.17, 2); g.add(spareRail);
+  }
+
+  // RAILROAD CROSSING BARRIER (near the road side)
+  const barrierPoleMat = new THREE.MeshStandardMaterial({color: 0x222222});
+  const redWhiteMat = new THREE.MeshStandardMaterial({color: 0xcc0000});
+  for (const bz of [7, -6]) {
+    const bPole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 3, 6), barrierPoleMat);
+    bPole.position.set(3, 1.5, bz); g.add(bPole);
+    const bArm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.2, 4), whiteMat);
+    bArm.position.set(3, 2.8, bz - 2); g.add(bArm);
+    for (let st = 0; st < 4; st++) {
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.22, 0.5), redWhiteMat);
+      stripe.position.set(3, 2.8, bz - 0.5 - st * 1); g.add(stripe);
+    }
+    const bLight = new THREE.Mesh(new THREE.SphereGeometry(0.12, 6, 6),
+      new THREE.MeshBasicMaterial({color: 0xff0000}));
+    bLight.position.set(3, 3.2, bz); g.add(bLight);
+  }
+
+  // RAILROAD CROSSING X-SIGN
+  const xSignPole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3.5, 6), darkMetalMat);
+  xSignPole.position.set(3.5, 1.75, 8); g.add(xSignPole);
+  const xArm1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.2, 2), whiteMat);
+  xArm1.rotation.y = Math.PI / 4; xArm1.position.set(3.5, 3.3, 8); g.add(xArm1);
+  const xArm2 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.2, 2), whiteMat);
+  xArm2.rotation.y = -Math.PI / 4; xArm2.position.set(3.5, 3.3, 8); g.add(xArm2);
+
+  // Overhead catenary poles (electric wire support for the light rail)
+  for (const pz of [-5, 0, 5]) {
+    const catPole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 8, 8), metalMat);
+    catPole.position.set(-2.5, 4, pz); g.add(catPole);
+    const catArm = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.08, 0.08), metalMat);
+    catArm.position.set(-0.75, 7.9, pz); g.add(catArm);
+    const insulator = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.2, 6), whiteMat);
+    insulator.position.set(0.8, 7.85, pz); g.add(insulator);
+  }
+  // Partial overhead wire between poles
+  const wireGeo = new THREE.CylinderGeometry(0.015, 0.015, 10, 4);
+  wireGeo.rotateX(Math.PI / 2);
+  const wire = new THREE.Mesh(wireGeo, darkMetalMat);
+  wire.position.set(0.8, 7.75, 0); g.add(wire);
+
+  // Platform under construction (future station platform)
+  const platform = new THREE.Mesh(new THREE.BoxGeometry(6, 0.6, 4), concreteMat);
+  platform.position.set(5.5, 0.3, -1); g.add(platform);
+  const platformEdge = new THREE.Mesh(new THREE.BoxGeometry(6, 0.15, 0.15), yellowMat);
+  platformEdge.position.set(5.5, 0.65, 0.9); g.add(platformEdge);
+  const platformRoof1 = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 3.5, 6), metalMat);
+  platformRoof1.position.set(3.5, 2.35, -0.5); g.add(platformRoof1);
+  const platformRoof2 = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 3.5, 6), metalMat);
+  platformRoof2.position.set(7.5, 2.35, -0.5); g.add(platformRoof2);
+  const roofPanel = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.08, 2.5),
+    new THREE.MeshStandardMaterial({color: 0x4488aa, roughness: 0.4, metalness: 0.3}));
+  roofPanel.position.set(5.5, 4.1, -0.5); g.add(roofPanel);
+
+  // Crane
+  const craneBase = new THREE.Mesh(new THREE.BoxGeometry(2, 0.4, 2), concreteMat);
+  craneBase.position.set(-7, 0.2, -3); g.add(craneBase);
+  const craneTower = new THREE.Mesh(new THREE.BoxGeometry(0.5, 14, 0.5), yellowMat);
+  craneTower.position.set(-7, 7.2, -3); g.add(craneTower);
+  const craneHub = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), yellowMat);
+  craneHub.position.set(-7, 14.2, -3); g.add(craneHub);
+  const craneArm = new THREE.Mesh(new THREE.BoxGeometry(12, 0.3, 0.3), yellowMat);
+  craneArm.position.set(-1, 14.5, -3); g.add(craneArm);
+  const craneBack = new THREE.Mesh(new THREE.BoxGeometry(4, 0.3, 0.3), yellowMat);
+  craneBack.position.set(-9, 14.5, -3); g.add(craneBack);
+  const counterweight = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1, 1), concreteMat);
+  counterweight.position.set(-10.5, 14.0, -3); g.add(counterweight);
+  const craneWire = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 6, 4), darkMetalMat);
+  craneWire.position.set(3, 11.5, -3); g.add(craneWire);
+
+  // Excavator (in the trench area)
+  const excCab = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.2, 1.5), yellowMat);
+  excCab.position.set(-5, 1.4, 5); g.add(excCab);
+  const excBase = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.6, 2), darkMetalMat);
+  excBase.position.set(-5, 0.5, 5); g.add(excBase);
+  for (const tz of [-0.8, 0.8]) {
+    const track = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.4, 0.4), darkMetalMat);
+    track.position.set(-5, 0.2, 5 + tz); g.add(track);
+  }
+  const excArm1 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3, 0.2), yellowMat);
+  excArm1.rotation.z = 0.4; excArm1.position.set(-4, 2.8, 5); g.add(excArm1);
+  const excArm2 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 2.2, 0.15), yellowMat);
+  excArm2.rotation.z = -0.6; excArm2.position.set(-3.2, 4.2, 5); g.add(excArm2);
+  const excBucket = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.4, 0.5), darkMetalMat);
+  excBucket.position.set(-3.8, 3.2, 5); g.add(excBucket);
+
+  // Dirt/gravel piles (dug out from the trench)
+  const pile1 = new THREE.Mesh(new THREE.ConeGeometry(2.2, 2.5, 8), dirtMat);
+  pile1.position.set(-7, 1.25, 4); g.add(pile1);
+  const pile2 = new THREE.Mesh(new THREE.ConeGeometry(1.5, 1.8, 7), gravelMat);
+  pile2.position.set(7, 0.9, 5); g.add(pile2);
+
+  // Blue tarp covering materials
+  const tarp = new THREE.Mesh(new THREE.PlaneGeometry(3, 2.5), blueTarpMat);
+  tarp.rotation.x = -Math.PI / 3.5; tarp.position.set(4, 1.2, 5); g.add(tarp);
+
+  // Chain-link fence along the road side
+  for (let i = 0; i < 9; i++) {
+    const fp = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2.2, 6), fencePostMat);
+    fp.position.set(-8 + i * 2.2, 1.1, 9); g.add(fp);
+  }
+  const fencePanel = new THREE.Mesh(new THREE.PlaneGeometry(18, 2), fenceMat);
+  fencePanel.position.set(0, 1.1, 9); g.add(fencePanel);
+  for (let i = 0; i < 5; i++) {
+    const warnLight = new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 6),
+      new THREE.MeshBasicMaterial({color: 0xffaa00}));
+    warnLight.position.set(-6 + i * 3.5, 2.3, 9); g.add(warnLight);
+  }
+
+  // Orange traffic cones
+  for (let i = 0; i < 8; i++) {
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.55, 8), orangeMat);
+    cone.position.set(-6 + i * 2 + (Math.random() - 0.5) * 0.5, 0.28, 9.8 + Math.random() * 0.3);
+    g.add(cone);
+  }
+
+  // Construction trailer/office
+  const trailerMat2 = new THREE.MeshStandardMaterial({color: 0xeeddcc, roughness: 0.7});
+  const trailer = new THREE.Mesh(new THREE.BoxGeometry(3.5, 2, 2), trailerMat2);
+  trailer.position.set(8, 1.2, -4); g.add(trailer);
+  const trailerRoof = new THREE.Mesh(new THREE.BoxGeometry(3.7, 0.1, 2.2), darkMetalMat);
+  trailerRoof.position.set(8, 2.25, -4); g.add(trailerRoof);
+
+  // Porta-potty
+  const ppMat = new THREE.MeshStandardMaterial({color: 0x2266aa, roughness: 0.7});
+  const pp = new THREE.Mesh(new THREE.BoxGeometry(1, 2.2, 1), ppMat);
+  pp.position.set(9, 1.1, -1); g.add(pp);
+  const ppRoof = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.1, 1.1), darkMetalMat);
+  ppRoof.position.set(9, 2.25, -1); g.add(ppRoof);
+
+  // Construction workers (5)
+  const workerPositions = [[1, 0, 4], [4, 0.6, -1], [-4, 0, 7], [-1, 0, -4], [6, 0, 3]];
+  const vestColors = [0xff8800, 0xff8800, 0xffcc00, 0xff8800, 0xffcc00];
+  for (let w = 0; w < 5; w++) {
+    const worker = new THREE.Group();
+    const vest = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.65, 0.3),
+      new THREE.MeshStandardMaterial({color: vestColors[w]}));
+    vest.position.y = 1.0; worker.add(vest);
+    const pants = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.55, 0.25),
+      new THREE.MeshStandardMaterial({color: 0x334455}));
+    pants.position.y = 0.4; worker.add(pants);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 8), skinMat);
+    head.position.y = 1.5; worker.add(head);
+    const hat = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.24, 0.15, 8),
+      (w % 2 === 0) ? yellowMat : whiteMat);
+    hat.position.y = 1.68; worker.add(hat);
+    worker.position.set(...workerPositions[w]);
+    g.add(worker);
+  }
+
+  // Big sign
+  const signTex = makeCanvasTex('\u05D1\u05E0\u05D9\u05D9\u05EA \u05E8\u05DB\u05D1\u05EA \u05E7\u05DC\u05D4 2015-2037', 1024, 192, '#cc0000', '#ffffff', 56);
+  const signMesh = new THREE.Mesh(new THREE.PlaneGeometry(10, 2.5),
+    new THREE.MeshBasicMaterial({map: signTex, transparent: true, side: THREE.DoubleSide}));
+  signMesh.position.set(0, 5.5, 10); g.add(signMesh);
+  const sp1 = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 5.5, 6), darkMetalMat);
+  sp1.position.set(-4, 2.75, 10); g.add(sp1);
+  const sp2 = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 5.5, 6), darkMetalMat);
+  sp2.position.set(4, 2.75, 10); g.add(sp2);
+
+  g.userData._roadOffset = 14;
+  return g;
+}
+
+function createAbandonedBusStop() {
+  const g = new THREE.Group();
+  const roofMat = new THREE.MeshStandardMaterial({color: 0x3a6a4a, roughness: 0.5, metalness: 0.2});
+  const frameMat = new THREE.MeshStandardMaterial({color: 0x667766, metalness: 0.5, roughness: 0.4});
+  const glassMat = new THREE.MeshStandardMaterial({color: 0xaaddcc, transparent: true, opacity: 0.2, side: THREE.DoubleSide});
+  const dirtyGlassMat = new THREE.MeshStandardMaterial({color: 0x889977, transparent: true, opacity: 0.4, side: THREE.DoubleSide});
+  const benchMat = new THREE.MeshStandardMaterial({color: 0x885533, roughness: 0.8});
+  const skinMat = new THREE.MeshStandardMaterial({color: 0xDEB887});
+  const darkMat = new THREE.MeshStandardMaterial({color: 0x333333});
+  const rustMat = new THREE.MeshStandardMaterial({color: 0x8B5A2B, roughness: 0.9});
+  const concreteMat = new THREE.MeshStandardMaterial({color: 0xbbbbaa, roughness: 0.95});
+  const whiteMat = new THREE.MeshStandardMaterial({color: 0xeeeeee, roughness: 0.6});
+
+  // Concrete sidewalk / platform
+  const sidewalk = new THREE.Mesh(new THREE.BoxGeometry(8, 0.15, 5), concreteMat);
+  sidewalk.position.set(0, 0.075, 0.5); g.add(sidewalk);
+
+  // Shelter structure (wider, taller, slightly tilted roof)
+  const roofGeo = new THREE.BoxGeometry(5.5, 0.15, 2.8);
+  const roof = new THREE.Mesh(roofGeo, roofMat);
+  roof.position.set(0, 3.5, 0); roof.rotation.z = 0.03; g.add(roof);
+
+  // Roof edge trim
+  const trimMat = new THREE.MeshStandardMaterial({color: 0x2a5a3a, metalness: 0.3});
+  const trimFront = new THREE.Mesh(new THREE.BoxGeometry(5.5, 0.06, 0.06), trimMat);
+  trimFront.position.set(0, 3.42, 1.37); g.add(trimFront);
+
+  // 6 support poles (thicker, realistic)
+  for (const px of [-2.5, 0, 2.5]) {
+    const pFront = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3.5, 8), frameMat);
+    pFront.position.set(px, 1.75, 1.2); g.add(pFront);
+    const pBack = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3.5, 8), frameMat);
+    pBack.position.set(px, 1.75, -1.1); g.add(pBack);
+  }
+
+  // Back wall (dirty glass panel)
+  const backWall = new THREE.Mesh(new THREE.PlaneGeometry(5.5, 3.3), dirtyGlassMat);
+  backWall.position.set(0, 1.75, -1.1); g.add(backWall);
+
+  // Side panels (partial glass)
+  for (const sx of [-2.55, 2.55]) {
+    const side = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 3.3), glassMat);
+    side.rotation.y = Math.PI / 2; side.position.set(sx, 1.75, 0.05); g.add(side);
+  }
+
+  // Faded advertisement poster on back wall
+  const adTex = makeCanvasTex('EGGED', 256, 128, '#ddddcc', '#666666', 50);
+  const adBoard = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 1.4),
+    new THREE.MeshBasicMaterial({map: adTex, transparent: true, side: THREE.DoubleSide}));
+  adBoard.position.set(0.8, 2.0, -1.08); g.add(adBoard);
+
+  // Faded route map poster on back wall (left side)
+  const routeMapTex = makeCanvasTex('\u05DE\u05E4\u05EA \u05E7\u05D5\u05D5\u05D9\u05DD', 256, 192, '#eeddbb', '#444444', 28);
+  const routeMap = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.2),
+    new THREE.MeshBasicMaterial({map: routeMapTex, transparent: true, side: THREE.DoubleSide}));
+  routeMap.position.set(-1.3, 1.8, -1.08); g.add(routeMap);
+
+  // Bench with armrests (anti-homeless design, realistic Israeli style)
+  const benchSeat = new THREE.Mesh(new THREE.BoxGeometry(4.0, 0.08, 0.5), benchMat);
+  benchSeat.position.set(0, 1.0, -0.3); g.add(benchSeat);
+  const benchBack = new THREE.Mesh(new THREE.BoxGeometry(4.0, 0.5, 0.06), benchMat);
+  benchBack.position.set(0, 1.3, -0.53); g.add(benchBack);
+  for (const bx of [-1.8, -0.6, 0.6, 1.8]) {
+    const benchLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.0, 6), frameMat);
+    benchLeg.position.set(bx, 0.5, -0.3); g.add(benchLeg);
+  }
+  for (const ax of [-2.0, 0, 2.0]) {
+    const armrest = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.35, 0.5), frameMat);
+    armrest.position.set(ax, 1.15, -0.3); g.add(armrest);
+  }
+
+  // Dusty ground around the platform
+  const dustMat = new THREE.MeshStandardMaterial({color: 0xAA9977, roughness: 1.0});
+  const dustPatch = new THREE.Mesh(new THREE.PlaneGeometry(10, 7), dustMat);
+  dustPatch.rotation.x = -Math.PI / 2; dustPatch.position.set(0, 0.01, 0.5); g.add(dustPatch);
+
+  // Bus stop sign pole (taller, with proper Egged-style round sign)
+  const signPole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 4.5, 8), rustMat);
+  signPole.position.set(3.2, 2.25, 1.5); g.add(signPole);
+  const signCircle = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.04, 16), new THREE.MeshStandardMaterial({color: 0x225500}));
+  signCircle.rotation.x = Math.PI / 2; signCircle.position.set(3.2, 4.2, 1.5); g.add(signCircle);
+  const signInner = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.05, 16), whiteMat);
+  signInner.rotation.x = Math.PI / 2; signInner.position.set(3.2, 4.2, 1.53); g.add(signInner);
+
+  // Route number plate on the pole
+  const routeNum = '' + (Math.floor(Math.random() * 80) + 1);
+  const routeTex = makeCanvasTex(routeNum, 128, 64, '#ffffff', '#333333', 36);
+  const routePlate = new THREE.Mesh(new THREE.PlaneGeometry(0.45, 0.25),
+    new THREE.MeshBasicMaterial({map: routeTex, transparent: true, side: THREE.DoubleSide}));
+  routePlate.position.set(3.2, 3.6, 1.53); g.add(routePlate);
+
+  // Electronic wait time display (larger, brighter, mounted on shelter front)
+  const waitMin = Math.floor(Math.random() * 55) + 5;
+  const waitText = '\u05D4\u05E7\u05D5 \u05D4\u05D1\u05D0 \u05D1\u05E2\u05D5\u05D3 ' + waitMin + ' \u05D3\u05E7\u05D5\u05EA';
+  const waitTex = makeCanvasTex(waitText, 512, 128, '#000000', '#00ff44', 34);
+  const waitDisplay = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 0.9),
+    new THREE.MeshBasicMaterial({map: waitTex, transparent: true, side: THREE.DoubleSide}));
+  waitDisplay.position.set(0, 2.85, 1.21); g.add(waitDisplay);
+  const displayFrame = new THREE.Mesh(new THREE.BoxGeometry(4.5, 1.0, 0.08), darkMat);
+  displayFrame.position.set(0, 2.85, 1.15); g.add(displayFrame);
+
+  // Broken fluorescent light with dangling wire
+  const lightTube = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 3.5, 6),
+    new THREE.MeshBasicMaterial({color: 0xffffee, transparent: true, opacity: 0.5}));
+  lightTube.rotation.z = Math.PI / 2; lightTube.position.set(0, 3.35, 0); g.add(lightTube);
+  const danglingWire = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.6, 4), darkMat);
+  danglingWire.position.set(1.5, 3.05, 0); danglingWire.rotation.z = 0.3; g.add(danglingWire);
+
+  // Overflowing trash can with garbage pile
+  const trashMat2 = new THREE.MeshStandardMaterial({color: 0x556655, roughness: 0.8});
+  const trash = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.32, 1.0, 10), trashMat2);
+  trash.position.set(-3.0, 0.55, 1.2); g.add(trash);
+  const trashOverflow = new THREE.Mesh(new THREE.SphereGeometry(0.35, 6, 6), new THREE.MeshStandardMaterial({color: 0xccbb88}));
+  trashOverflow.position.set(-3.0, 1.1, 1.2); g.add(trashOverflow);
+  const trashOverflow2 = new THREE.Mesh(new THREE.SphereGeometry(0.2, 6, 6), new THREE.MeshStandardMaterial({color: 0xddcc99}));
+  trashOverflow2.position.set(-2.8, 1.2, 1.05); g.add(trashOverflow2);
+  const trashBag = new THREE.Mesh(new THREE.SphereGeometry(0.25, 6, 6), darkMat);
+  trashBag.position.set(-3.3, 0.3, 1.5); g.add(trashBag);
+  const litterMat = new THREE.MeshStandardMaterial({color: 0xddddcc, side: THREE.DoubleSide});
+  for (let li = 0; li < 8; li++) {
+    const litter = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 0.12), litterMat);
+    litter.rotation.x = -Math.PI / 2 + Math.random() * 0.3;
+    litter.position.set(-3.0 + (Math.random() - 0.5) * 2.0, 0.16, 1.2 + (Math.random() - 0.5) * 1.5);
+    g.add(litter);
+  }
+  const bottleMat = new THREE.MeshStandardMaterial({color: 0x88ccaa, transparent: true, opacity: 0.5});
+  const bottle = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.2, 8), bottleMat);
+  bottle.rotation.z = Math.PI / 2; bottle.position.set(-2.5, 0.17, 1.6); g.add(bottle);
+  const bottle2 = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.22, 8),
+    new THREE.MeshStandardMaterial({color: 0x885522, transparent: true, opacity: 0.6}));
+  bottle2.rotation.z = Math.PI / 2; bottle2.rotation.y = 0.5; bottle2.position.set(-3.5, 0.17, 1.0); g.add(bottle2);
+
+  // Coffee cup and cigarette butts
+  const cupMat = new THREE.MeshStandardMaterial({color: 0xeeeeee});
+  const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.035, 0.12, 8), cupMat);
+  cup.rotation.z = Math.PI / 2; cup.position.set(-1.5, 0.17, 1.8); g.add(cup);
+  const cigMat = new THREE.MeshStandardMaterial({color: 0xddccaa});
+  for (let ci = 0; ci < 4; ci++) {
+    const cig = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.05, 4), cigMat);
+    cig.rotation.z = Math.PI / 2; cig.rotation.y = Math.random() * Math.PI;
+    cig.position.set(-2.0 + Math.random() * 1.5, 0.16, 1.5 + Math.random() * 0.8); g.add(cig);
+  }
+
+  // Weeds and cracks
+  const weedMat = new THREE.MeshStandardMaterial({color: 0x447733, side: THREE.DoubleSide});
+  for (let w = 0; w < 8; w++) {
+    const weed = new THREE.Mesh(new THREE.PlaneGeometry(0.12 + Math.random() * 0.1, 0.3 + Math.random() * 0.3), weedMat);
+    weed.position.set(-3.5 + w * 1.0 + Math.random() * 0.4, 0.2 + Math.random() * 0.1, 1.5 + Math.random() * 0.6);
+    weed.rotation.y = Math.random() * Math.PI;
+    weed.rotation.z = (Math.random() - 0.5) * 0.3;
+    g.add(weed);
+  }
+
+  // Cobwebs in shelter corners
+  const cobwebMat = new THREE.MeshBasicMaterial({color: 0xdddddd, transparent: true, opacity: 0.2, side: THREE.DoubleSide});
+  for (const [cx, cz] of [[-2.4, -0.9], [2.3, -0.9], [-2.4, 1.1], [2.3, 1.1]]) {
+    const cobGeo = new THREE.BufferGeometry();
+    cobGeo.setAttribute('position', new THREE.Float32BufferAttribute([cx,3.4,cz, cx+0.4,3.4,cz, cx,2.8,cz], 3));
+    g.add(new THREE.Mesh(cobGeo, cobwebMat));
+  }
+
+  // Graffiti mark on side panel
+  const grafTex = makeCanvasTex('#17', 64, 64, 'rgba(0,0,0,0)', '#cc2222', 32);
+  const graffiti = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.5),
+    new THREE.MeshBasicMaterial({map: grafTex, transparent: true}));
+  graffiti.rotation.y = Math.PI / 2; graffiti.position.set(-2.54, 1.2, 0.3); g.add(graffiti);
+
+  // Cracked/missing glass panel (right side - replace clear glass with broken frame)
+  const crackFrame = new THREE.Mesh(new THREE.BoxGeometry(0.04, 2.5, 0.04), frameMat);
+  crackFrame.rotation.y = Math.PI / 2; crackFrame.position.set(2.55, 2.0, 0.5); g.add(crackFrame);
+  const crackShard1 = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.8),
+    new THREE.MeshStandardMaterial({color: 0x99ccbb, transparent: true, opacity: 0.15, side: THREE.DoubleSide}));
+  crackShard1.rotation.y = Math.PI / 2; crackShard1.position.set(2.56, 2.5, 0.6); crackShard1.rotation.z = 0.15; g.add(crackShard1);
+
+  // Ad poster taped on bench back
+  const benchAdTex = makeCanvasTex('\u05E0\u05DB\u05E1 \u05DE\u05D5\u05D6\u05DC', 128, 64, '#ffffff', '#0044aa', 20);
+  const benchAd = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.3),
+    new THREE.MeshBasicMaterial({map: benchAdTex, transparent: true, side: THREE.DoubleSide}));
+  benchAd.position.set(0.8, 1.3, -0.51); g.add(benchAd);
+
+  // Puddle near curb
+  const puddleMat = new THREE.MeshStandardMaterial({color: 0x556677, metalness: 0.6, roughness: 0.1, transparent: true, opacity: 0.4});
+  const puddle = new THREE.Mesh(new THREE.CircleGeometry(0.8, 12), puddleMat);
+  puddle.rotation.x = -Math.PI / 2; puddle.position.set(1.5, 0.02, 2.5); g.add(puddle);
+
+  // Waiting people (9 block figures with varied poses)
+  const pColors = [0xcc3333, 0x3355cc, 0x33aa44, 0xddaa22, 0x8833aa, 0xff6600, 0x666666, 0x22aaaa, 0xcc6688];
+  const hairColors = [0x332211, 0x111111, 0x665522, 0x993322, 0x222222, 0x443311, 0x111111, 0x554422, 0x332211];
+  for (let p = 0; p < 9; p++) {
+    const person = new THREE.Group();
+    const bodyCol = new THREE.MeshStandardMaterial({color: pColors[p]});
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.65, 0.28), bodyCol);
+    const legs = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.55, 0.24), darkMat);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 8), skinMat);
+    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 4), new THREE.MeshStandardMaterial({color: hairColors[p]}));
+
+    if (p < 3) {
+      body.position.y = 1.28; legs.position.y = 0.72; head.position.y = 1.76; hair.position.set(0, 1.85, -0.04);
+      person.position.set(-1.2 + p * 0.8, 0, -0.3);
+      hair.scale.set(1, 0.5, 1);
+    } else if (p < 6) {
+      body.position.y = 0.9; legs.position.y = 0.35; head.position.y = 1.36; hair.position.set(0, 1.44, -0.04);
+      person.position.set(-2.5 + (p - 3) * 0.9, 0, 2.0 + Math.random() * 0.3);
+      hair.scale.set(1, 0.5, 1);
+    } else {
+      body.position.y = 1.28; legs.position.y = 0.72; head.position.y = 1.76; hair.position.set(0, 1.85, -0.04);
+      person.position.set(0.5 + (p - 6) * 0.75, 0, 1.6 + Math.random() * 0.5);
+      hair.scale.set(1, 0.5, 1);
+      if (p === 7) person.rotation.y = -0.3;
+    }
+
+    person.add(body); person.add(legs); person.add(head); person.add(hair);
+
+    if (p === 1 || p === 4) {
+      const phone = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.1, 0.02), darkMat);
+      phone.position.set(0.15, 1.45, 0.15); person.add(phone);
+    }
+    if (p === 2 || p === 5) {
+      const bag = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.25, 0.12), new THREE.MeshStandardMaterial({color: 0x554433}));
+      bag.position.set(0.25, 0.6, 0); person.add(bag);
+    }
+    g.add(person);
+  }
+
+  // Stray cat sitting near the shelter
+  const catMat = new THREE.MeshStandardMaterial({color: 0xcc8844});
+  const catBody = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.2, 0.45), catMat);
+  catBody.position.set(-3.5, 0.25, 0.3); g.add(catBody);
+  const catHead = new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 6), catMat);
+  catHead.position.set(-3.5, 0.4, 0.08); g.add(catHead);
+  const catTail = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.015, 0.35, 4), catMat);
+  catTail.rotation.z = 0.5; catTail.position.set(-3.5, 0.35, 0.55); g.add(catTail);
+
+  // Parked electric scooter
+  const scootMat = new THREE.MeshStandardMaterial({color: 0x222222, metalness: 0.6});
+  const scootDeck = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.06, 0.6), scootMat);
+  scootDeck.position.set(3.8, 0.15, 2.2); g.add(scootDeck);
+  const scootPole = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.8, 6), scootMat);
+  scootPole.position.set(3.8, 0.55, 1.95); scootPole.rotation.x = 0.15; g.add(scootPole);
+  const scootHandle = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.3, 6), scootMat);
+  scootHandle.rotation.z = Math.PI / 2; scootHandle.position.set(3.8, 0.92, 1.9); g.add(scootHandle);
+  const scootWheel1 = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.04, 12), scootMat);
+  scootWheel1.rotation.x = Math.PI / 2; scootWheel1.position.set(3.8, 0.1, 1.95); g.add(scootWheel1);
+  const scootWheel2 = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.04, 12), scootMat);
+  scootWheel2.rotation.x = Math.PI / 2; scootWheel2.position.set(3.8, 0.1, 2.45); g.add(scootWheel2);
+
+  // Big sign above the shelter (Hebrew, angled toward player sight)
+  const aboveSignTex = makeCanvasTex('\u05D4\u05E7\u05D5 \u05D4\u05D1\u05D0 \u05D1\u05E2\u05D5\u05D3 45 \u05D3\u05E7\u05D5\u05EA', 1024, 256, '#1a3d6e', '#ffffff', 64);
+  const signGroup = new THREE.Group();
+  const aboveSign = new THREE.Mesh(new THREE.PlaneGeometry(5.5, 1.4),
+    new THREE.MeshBasicMaterial({map: aboveSignTex, transparent: true, side: THREE.DoubleSide}));
+  aboveSign.position.set(0, 0, 0.15); signGroup.add(aboveSign);
+  const aboveSignBg = new THREE.Mesh(new THREE.BoxGeometry(5.8, 1.6, 0.08),
+    new THREE.MeshStandardMaterial({color: 0x1a3d6e, emissive: 0x0a1a3a, roughness: 0.5}));
+  signGroup.add(aboveSignBg);
+  signGroup.position.set(0, 5.2, 1.2);
+  signGroup.rotation.y = -Math.PI / 2;
+  g.add(signGroup);
+  const signPostL = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.0, 6), frameMat);
+  signPostL.position.set(-0.6, 4.1, 1.2); g.add(signPostL);
+  const signPostR = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.0, 6), frameMat);
+  signPostR.position.set(0.6, 4.1, 1.2); g.add(signPostR);
+
+  g.scale.set(1.4, 1.4, 1.4);
+  g.userData._roadOffset = 5;
+  g.rotation.y = -Math.PI / 2;
+  return g;
 }
 
 // Pre-cached Goldknopf textures (created once, reused every spawn)
@@ -1034,6 +1558,21 @@ groundPlane.position.y = -0.05;
 groundPlane.receiveShadow = true;
 scene.add(groundPlane);
 
+// Event scenery (construction sites, abandoned bus stops)
+const eventScenery = [];
+const EVENT_SPACING = 250;
+const eventFactories = [() => createConstructionSite(), () => createAbandonedBusStop()];
+for (let i = 0; i < 6; i++) {
+  const ev = eventFactories[i % eventFactories.length]();
+  const side = (i % 2 === 0) ? 1 : -1;
+  const off = ev.userData._roadOffset || 6;
+  ev.position.set(side * (ROAD_WIDTH / 2 + off), 0, -i * EVENT_SPACING - 300);
+  ev.userData._baseRotY = ev.rotation.y;
+  if (side === -1) ev.rotation.y = ev.userData._baseRotY + Math.PI;
+  scene.add(ev);
+  eventScenery.push(ev);
+}
+
 const camTarget = new THREE.Vector3(0, 7, 10);
 function updateEnvironment(playerZ) {
   const numRoadSegs = roadSegs.length;
@@ -1050,6 +1589,23 @@ function updateEnvironment(playerZ) {
     }
   }
   for (const o of streetObjects) { if (o.position.z > playerZ + 28) { o.position.z -= STREET_SPAN + 20; } }
+  // Recycle event scenery
+  for (const ev of eventScenery) {
+    if (ev.position.z > playerZ + 40) {
+      ev.position.z -= eventScenery.length * EVENT_SPACING;
+      const side = (Math.random() > 0.5) ? 1 : -1;
+      ev.position.x = side * (ROAD_WIDTH / 2 + (ev.userData._roadOffset || 6));
+      ev.rotation.y = (side === -1) ? ev.userData._baseRotY + Math.PI : ev.userData._baseRotY;
+    }
+  }
+  // Hide buildings near events
+  for (const b of buildings) {
+    let near = false;
+    for (const ev of eventScenery) {
+      if (Math.abs(b.position.z - ev.position.z) < 50) { near = true; break; }
+    }
+    b.visible = !near;
+  }
   const crowdSpan = crowds.length * 30;
   for (const cr of crowds) { if (cr.position.z > playerZ+25) { cr.position.z -= crowdSpan + Math.random()*10; } }
   for (const c of clouds) { if (c.position.z > playerZ+60) { c.position.z -= 200; c.position.x = (Math.random()-0.5)*150; } }
@@ -3572,7 +4128,7 @@ const gs = {
   stumbling:false, stumbleTimer:0,
   warnSounded:false,
   testTaxmanSpawned:false,
-  deriKeySpawned:false, deriJailSpawned:false, hasKey:false,
+  deriKeySpawned:false, deriJailSpawned:false, hasKey:false, _deriPaused:false,
   deriKeyDist: 3000 + Math.random()*5000,
   deriJailOffset: 1500 + Math.random()*1000,
   cityZone:-1,
@@ -3603,7 +4159,7 @@ function resetGame() {
     stumbling:false, stumbleTimer:0,
     warnSounded:false,
     testTaxmanSpawned:false,
-    deriKeySpawned:false, deriJailSpawned:false, hasKey:false,
+    deriKeySpawned:false, deriJailSpawned:false, hasKey:false, _deriPaused:false,
     deriKeyDist: 3000 + Math.random()*5000,
     deriJailOffset: 1500 + Math.random()*1000,
     cityZone:-1,
@@ -3637,6 +4193,15 @@ function resetGame() {
   for (let i = 0; i < crowds.length; i++) {
     crowds[i].position.z = -Math.floor(i/2) * 30 - Math.random() * 10;
   }
+
+  // Reset event scenery
+  for (let i = 0; i < eventScenery.length; i++) {
+    const ev = eventScenery[i];
+    const side = (i % 2 === 0) ? 1 : -1;
+    ev.position.set(side * (ROAD_WIDTH / 2 + (ev.userData._roadOffset || 6)), 0, -i * EVENT_SPACING - 300);
+    ev.rotation.y = (side === -1) ? ev.userData._baseRotY + Math.PI : ev.userData._baseRotY;
+  }
+  for (const b of buildings) b.visible = true;
 
   // Snap camera and ground back to start
   camera.position.set(0, 8.5, 14);
@@ -3672,18 +4237,17 @@ function resetGame() {
   }
 }
 
-function handleKey(key) {
+function handleKey(code) {
   if (gs.state !== 'playing') return;
-  const k = key.toLowerCase();
-  if (k==='arrowleft'||k==='a') { gs.playerLane = Math.max(0, gs.playerLane-1); gs.targetX = LANE_X[gs.playerLane]; }
-  else if (k==='arrowright'||k==='d') { gs.playerLane = Math.min(2, gs.playerLane+1); gs.targetX = LANE_X[gs.playerLane]; }
-  else if (k==='arrowup'||k==='w'||k===' ') {
+  if (code==='ArrowLeft'||code==='KeyA') { gs.playerLane = Math.max(0, gs.playerLane-1); gs.targetX = LANE_X[gs.playerLane]; }
+  else if (code==='ArrowRight'||code==='KeyD') { gs.playerLane = Math.min(2, gs.playerLane+1); gs.targetX = LANE_X[gs.playerLane]; }
+  else if (code==='ArrowUp'||code==='KeyW'||code==='Space') {
     if (gs.scooterTimer > 0) return;
     if (!gs.jumping) { gs.jumping=true; gs.jumpVel=JUMP_FORCE; gs.doubleJumped=false; playSound('jump'); }
   }
-  else if (k==='arrowdown'||k==='s') {
+  else if (code==='ArrowDown'||code==='KeyS') {
     if (gs.scooterTimer > 0) return;
-    if (gs.jumping) { gs.jumpVel = -JUMP_FORCE * 1.2; gs._slamming = true; playSound('slide'); } // mid-air slam → land sliding
+    if (gs.jumping) { gs.jumpVel = -JUMP_FORCE * 1.2; gs._slamming = true; playSound('slide'); }
     else if (!gs.crouching) { gs.crouching=true; gs.crouchTimer=CROUCH_DUR; playSound('slide'); }
   }
 }
@@ -4678,13 +5242,18 @@ function updateGame(dt) {
       else if (o.type === 'deriJail') {
         if (gs.hasKey) {
           gs.hasKey = false;
+          gs.secondChance = true;
+          gs._deriPaused = true;
           const ov = document.getElementById('deriOverlay');
           const face = document.getElementById('deriOverlayFace');
           if (face && !face.src) face.src = IMG_DERI;
           if (ov) { ov.classList.remove('out'); ov.classList.add('active'); }
-          setTimeout(() => { if(ov){ ov.classList.add('out'); setTimeout(()=>{ ov.classList.remove('active','out'); },500); } }, 2000);
+          setTimeout(() => {
+            gs._deriPaused = false;
+            if (ov) { ov.classList.add('out'); setTimeout(() => { ov.classList.remove('active','out'); }, 500); }
+          }, 2000);
           gs.busPrice = (gs.busPrice||0) + 1000;
-          addFloatingText('🔓 שחררת את דרעי! +1000', '#FFD700');
+          addFloatingText('\u{1F513} \u05E9\u05D7\u05E8\u05E8\u05EA \u05D0\u05EA \u05D3\u05E8\u05E2\u05D9! +1000 + \u2764\uFE0F', '#FFD700');
           playSound('powerup');
           scene.remove(o.mesh); gs.obstacles.splice(i, 1); continue;
         } else { hit = gs.jumpY <= 4.5; }
@@ -5873,6 +6442,13 @@ document.getElementById('btnGhostRun').onclick = () => {
   startBgMusic();
 };
 
+document.getElementById('btnDesign').onclick = () => { window.location.search = '?design'; };
+document.getElementById('btnBackToMenu').onclick = () => {
+  document.getElementById('gameOverOverlay').classList.remove('visible');
+  document.getElementById('menuOverlay').classList.add('visible');
+  gs.state = 'menu';
+};
+
 document.getElementById('btnStart').onclick = () => {
   requestFullscreen();
   _ac();
@@ -5936,10 +6512,10 @@ document.getElementById('btnTryAgain').onclick = () => {
 
 document.addEventListener('keydown', e => {
   if (gs.state === 'playing') {
-    if (!e.repeat) handleKey(e.key);
+    if (!e.repeat) handleKey(e.code);
     e.preventDefault();
   } else if (gs.state === 'menu' || gs.state === 'dead') {
-    if (e.key === 'Enter' || e.key === ' ') {
+    if (e.code === 'Enter' || e.code === 'Space') {
       const btn = document.getElementById(gs.state === 'dead' ? 'btnTryAgain' : 'btnStart');
       if (btn) btn.click();
       e.preventDefault();
@@ -5969,7 +6545,7 @@ function loop() {
   lastTime = now;
 
   if (gs.state === 'playing') {
-    updateGame(dt);
+    if (!gs._deriPaused) updateGame(dt);
     let skyY = 0;
     if (gs.scooterTimer > 0) {
       if (gs.scooterTimer <= 500) {
@@ -6122,12 +6698,12 @@ if (new URLSearchParams(location.search).has('design')) {
   import('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js').then(({OrbitControls}) => {
     // Hide all game UI
     document.getElementById('hud').style.display = 'none';
-    document.getElementById('mainMenu').style.display = 'none';
+    document.getElementById('menuOverlay').style.display = 'none';
     document.getElementById('gameOverOverlay').style.display = 'none';
     document.getElementById('dailyWinOverlay').style.display = 'none';
 
-    // Clear existing scene objects except lights
     while (scene.children.length > 0) scene.remove(scene.children[0]);
+    scene.background = new THREE.Color(0x334455);
 
     // Re-add lights
     scene.add(new THREE.AmbientLight(0xffffff, 0.9));
@@ -6154,9 +6730,11 @@ if (new URLSearchParams(location.search).has('design')) {
       { label: '׳׳™׳© ׳–׳§׳',     fn: () => createOldMan() },
       { label: '׳׳•׳˜׳•׳‘׳•׳¡',     fn: () => createBus(0) },
       { label: '׳¨׳›׳‘׳×',        fn: () => createTrain() },
+      { label: 'Construction',  fn: () => createConstructionSite() },
+      { label: 'Bus Stop',      fn: () => createAbandonedBusStop() },
     ];
 
-    const SPACING = 7;
+    const SPACING = 14;
     const totalW = (entries.length - 1) * SPACING;
 
     entries.forEach((e, i) => {
@@ -6207,6 +6785,17 @@ if (new URLSearchParams(location.search).has('design')) {
       borderRadius:'8px', fontFamily:'Arial', fontSize:'14px', zIndex:'999', pointerEvents:'none'
     });
     document.body.appendChild(banner);
+
+    const backBtn = document.createElement('button');
+    backBtn.textContent = '\u2190 MENU';
+    Object.assign(backBtn.style, {
+      position:'fixed', top:'10px', left:'10px', zIndex:'999',
+      padding:'10px 22px', fontSize:'16px', fontWeight:'bold',
+      background:'linear-gradient(135deg,#444,#888)', color:'#fff',
+      border:'none', borderRadius:'30px', cursor:'pointer'
+    });
+    backBtn.onclick = () => { window.location.href = window.location.pathname; };
+    document.body.appendChild(backBtn);
   });
 }
 </script>
