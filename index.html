@@ -97,7 +97,7 @@ body{background:#000;display:flex;justify-content:center;align-items:center;heig
   </div>
   <div id="hudBusPrice">&#x1F68C; Ticket: &#x20AA;5.50</div>
   <div id="hudExtraLife" style="position:absolute;top:60px;right:12px;font-size:24px;display:none;pointer-events:none;z-index:5;text-shadow:0 0 8px #ff4488;color:#ff4488;font-weight:bold">&#x2764;&#xFE0F; x2</div>
-  <div id="hudChaserWarn" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:28px;font-weight:bold;color:#ff2222;text-shadow:0 0 20px #ff0000,0 0 40px #ff000088;pointer-events:none;z-index:6;animation:chaserPulse 0.5s infinite alternate">⚠️ לפיד מתקרב!</div>
+  <div id="hudChaserWarn" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:28px;font-weight:bold;color:#ff2222;text-shadow:0 0 20px #ff0000,0 0 40px #ff000088;pointer-events:none;z-index:6;animation:chaserPulse 0.5s infinite alternate">⚠️ יאיר תפס את מירי</div>
   <div id="floatingTextContainer"></div>
   <div id="stumbleOverlay"></div>
 
@@ -6623,7 +6623,7 @@ function loop() {
         if (_goH2) _goH2.textContent = `\uD83D\uDC6E \u05EA\u05E4\u05E1\u05EA \u05D0\u05EA \u05DE\u05D9\u05E8\u05D9 ${gs.catchCount} ${gs.catchCount === 1 ? '\u05E4\u05E2\u05DD' : '\u05E4\u05E2\u05DE\u05D9\u05DD'}!`;
       } else {
         if (_goH1) { _goH1.innerHTML = '&#x05E0;&#x05EA;&#x05E4;&#x05E1;&#x05EA;!'; _goH1.style.color = '#ff3333'; }
-        if (_goH2) _goH2.innerHTML = '&#x05DC;&#x05E4;&#x05D9;&#x05D3; &#x05E9;&#x05D9;&#x05E4;&#x05D3; &#x05D0;&#x05EA; &#x05DE;&#x05D9;&#x05E8;&#x05D9;!';
+        if (_goH2) _goH2.innerHTML = '&#x05D9;&#x05D0;&#x05D9;&#x05E8; &#x05EA;&#x05E4;&#x05E1; &#x05D0;&#x05EA; &#x05DE;&#x05D9;&#x05E8;&#x05D9;!';
       }
     }
     if (gs.chaseMode) {
@@ -6803,7 +6803,7 @@ if (new URLSearchParams(location.search).has('design')) {
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    const swUrl = '/miri-surfers/service-worker.js';
+    const swUrl = new URL('service-worker.js', window.location.href).href;
     navigator.serviceWorker.register(swUrl).then(reg => {
       reg.addEventListener('updatefound', () => {
         const newSW = reg.installing;
@@ -6814,7 +6814,7 @@ if ('serviceWorker' in navigator) {
           }
         });
       });
-    }).catch(() => navigator.serviceWorker.register('service-worker.js'));
+    });
 
     // When SW takes control, reload once to get fresh content
     let refreshing = false;

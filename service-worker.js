@@ -1,10 +1,17 @@
-const CACHE = 'miri-surfers-v3';
+// Local dev + GitHub Pages: asset URLs follow this script's path (website is unchanged; this file is disk-only).
+const BASE = self.location.pathname.replace(/\/service-worker\.js$/i, '');
+const full = (suffix) => {
+  if (!suffix.startsWith('/')) suffix = '/' + suffix;
+  return BASE + suffix;
+};
+
+const CACHE = 'miri-surfers-v6';
 const ASSETS = [
-  '/miri-surfers/',
-  '/miri-surfers/index.html',
-  '/miri-surfers/icon-192.png',
-  '/miri-surfers/icon-512.png',
-  '/miri-surfers/manifest.json'
+  full('/'),
+  full('/index.html'),
+  full('/icon-192.png'),
+  full('/icon-512.png'),
+  full('/manifest.json')
 ];
 
 self.addEventListener('install', e => {
@@ -22,7 +29,6 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Always try network first for HTML (so updates load immediately)
   if (e.request.mode === 'navigate') {
     e.respondWith(
       fetch(e.request).then(res => {
@@ -33,7 +39,6 @@ self.addEventListener('fetch', e => {
     );
     return;
   }
-  // For other assets: cache first, then network
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
@@ -46,7 +51,6 @@ self.addEventListener('fetch', e => {
   );
 });
 
-// Tell all open tabs to reload when a new SW takes over
 self.addEventListener('message', e => {
   if (e.data === 'skipWaiting') self.skipWaiting();
 });
